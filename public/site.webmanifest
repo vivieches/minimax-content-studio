@@ -1,0 +1,17 @@
+{
+  "name": "MiniMax Studio",
+  "short_name": "MiniMax Studio",
+  "description": "Local-first dashboard for MiniMax content generation.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F1118",
+  "theme_color": "#FF4B8B",
+  "icons": [
+    {
+      "src": "/minimax-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

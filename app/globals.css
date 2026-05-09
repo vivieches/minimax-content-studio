@@ -1,0 +1,185 @@
+@import "tailwindcss";
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   DESIGN TOKENS — MiniMax Studio
+   Semantic tokens map to CSS custom properties via @theme inline,
+   enabling runtime light/dark switching without JS class toggling.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@theme inline {
+  /* Surfaces */
+  --color-canvas:        var(--mm-canvas);
+  --color-sidebar:       var(--mm-sidebar);
+  --color-card:          var(--mm-card);
+  --color-card-hi:       var(--mm-card-hi);
+  /* Borders */
+  --color-line:          var(--mm-line);
+  --color-line-hi:       var(--mm-line-hi);
+  /* Text */
+  --color-ink:           var(--mm-ink);
+  --color-ink-2:         var(--mm-ink-2);
+  --color-ink-3:         var(--mm-ink-3);
+  /* Accent — MiniMax pink→orange */
+  --color-accent:        var(--mm-accent);
+  --color-accent-hi:     var(--mm-accent-hi);
+  --color-accent-soft:   var(--mm-accent-soft);
+  --color-accent-fg:     var(--mm-accent-fg);
+  /* Hover surface */
+  --color-hover:         var(--mm-hover);
+  /* Semantic states */
+  --color-danger:        var(--mm-danger);
+  --color-danger-soft:   var(--mm-danger-soft);
+  --color-ok:            var(--mm-ok);
+  --color-ok-soft:       var(--mm-ok-soft);
+  --color-warn:          var(--mm-warn);
+  /* Typography */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   DARK THEME — default
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+:root {
+  color-scheme: dark;
+  --mm-canvas:        #0C0D12;
+  --mm-sidebar:       #0E0F15;
+  --mm-card:          #111318;
+  --mm-card-hi:       #161820;
+  --mm-line:          rgba(255, 255, 255, 0.07);
+  --mm-line-hi:       rgba(255, 255, 255, 0.12);
+  --mm-ink:           #EFF1FA;
+  --mm-ink-2:         #8A8FA8;
+  --mm-ink-3:         #505470;
+  --mm-accent:        #FF4B8B;
+  --mm-accent-hi:     #FF6BA3;
+  --mm-accent-soft:   rgba(255, 75, 139, 0.12);
+  --mm-accent-fg:     #FFFFFF;
+  --mm-accent-grad:   linear-gradient(135deg, #FF4B8B 0%, #FF8035 100%);
+  --mm-hover:         rgba(255, 255, 255, 0.045);
+  --mm-danger:        #F87171;
+  --mm-danger-soft:   rgba(248, 113, 113, 0.12);
+  --mm-ok:            #34D399;
+  --mm-ok-soft:       rgba(52, 211, 153, 0.12);
+  --mm-warn:          #FBBF24;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   LIGHT THEME
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+html.light {
+  color-scheme: light;
+  --mm-canvas:        #F5F6FA;
+  --mm-sidebar:       #FAFBFE;
+  --mm-card:          #FFFFFF;
+  --mm-card-hi:       #ECEEF5;
+  --mm-line:          rgba(0, 0, 0, 0.08);
+  --mm-line-hi:       rgba(0, 0, 0, 0.14);
+  --mm-ink:           #111318;
+  --mm-ink-2:         #6B7080;
+  --mm-ink-3:         #9CA3B0;
+  --mm-accent:        #E8356D;
+  --mm-accent-hi:     #C9245A;
+  --mm-accent-soft:   rgba(232, 53, 109, 0.10);
+  --mm-accent-fg:     #FFFFFF;
+  --mm-accent-grad:   linear-gradient(135deg, #E8356D 0%, #F06820 100%);
+  --mm-hover:         rgba(0, 0, 0, 0.04);
+  --mm-danger:        #DC2626;
+  --mm-danger-soft:   rgba(220, 38, 38, 0.10);
+  --mm-ok:            #059669;
+  --mm-ok-soft:       rgba(5, 150, 105, 0.10);
+  --mm-warn:          #D97706;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   BRAND GRADIENT UTILITY
+   Use .btn-brand for primary CTAs that need the pink→orange grad.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.btn-brand {
+  background: var(--mm-accent-grad);
+  color: #FFFFFF;
+  border: none;
+}
+.btn-brand:hover {
+  filter: brightness(1.08);
+}
+.btn-brand:active {
+  filter: brightness(0.95);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   BASE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--mm-canvas);
+  color: var(--mm-ink);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Select option theming */
+option {
+  background-color: var(--mm-card);
+  color: var(--mm-ink);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SCROLLBAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+::-webkit-scrollbar          { width: 5px; height: 5px; }
+::-webkit-scrollbar-track    { background: transparent; }
+::-webkit-scrollbar-thumb    { background: var(--mm-line-hi); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--mm-ink-3); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   FOCUS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+input:focus,
+button:focus,
+a:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+}
+
+input:focus-visible,
+button:focus-visible,
+a:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--mm-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SKIP LINK (a11y)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--mm-accent);
+  color: var(--mm-accent-fg);
+  padding: 8px 16px;
+  z-index: 9999;
+  font-size: 13px;
+  font-weight: 500;
+  transition: top 0.2s ease;
+  border-radius: 0 0 8px 0;
+}
+.skip-link:focus { top: 0; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   REDUCED MOTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

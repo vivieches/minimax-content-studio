@@ -1,0 +1,172 @@
+import { z } from "zod";
+
+// ── Settings ──────────────────────────────────────────────────────────
+export const settingsSchema = z.object({
+  action: z.enum(["reset", "clear_assets"]).optional(),
+  apiKey: z.string().max(500).optional(),
+  apiKeyType: z.enum(["pay_as_you_go", "token_plan"]).optional(),
+  baseUrl: z.string().url().max(500).optional(),
+  textModel: z.string().max(100).optional(),
+  textModelFast: z.string().max(100).optional(),
+  imageModel: z.string().max(100).optional(),
+  musicModel: z.string().max(100).optional(),
+  videoModel: z.string().max(100).optional(),
+  providerMode: z.enum(["official-text-v2", "openai-compatible", "anthropic-compatible"]).optional(),
+  demoMode: z.boolean().optional(),
+  debugMode: z.boolean().optional(),
+  exportDirectory: z.string().max(500).optional(),
+});
+
+// ── Assets ───────────────────────────────────────────────────────────
+export const assetSchema = z.object({
+  type: z.enum(["script", "thumbnail", "music", "video", "export", "prompt"]),
+  title: z.string().min(1).max(500),
+  description: z.string().max(2000),
+  content: z.string().optional(),
+  filePath: z.string().max(1000).optional(),
+  thumbnailPath: z.string().max(1000).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  sourceModule: z.string().max(100).optional(),
+  tags: z.array(z.string().max(200)).max(50).optional(),
+  favorite: z.boolean().optional(),
+});
+
+// ── Exports ──────────────────────────────────────────────────────────
+export const exportSchema = z.object({
+  title: z.string().min(1).max(500),
+  type: z.enum(["package", "video", "music", "document"]),
+  status: z.enum(["completed", "processing", "failed", "pending"]),
+  files: z.array(z.string().max(1000)).max(100),
+  progress: z.number().min(0).max(100),
+  format: z.string().max(50),
+  downloadPath: z.string().max(1000).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+// ── Script Generation ────────────────────────────────────────────────
+export const scriptGenerateSchema = z.object({
+  briefing: z.string().min(1).max(2000),
+  saveToAssets: z.boolean().optional().default(true),
+});
+
+// ── Thumbnail Prompt (legacy prompt generation) ──────────────────────
+export const thumbnailGenerateSchema = z.object({
+  theme: z.string().min(1).max(500),
+  title: z.string().min(1).max(500),
+  style: z.string().min(1).max(200),
+  text: z.string().min(1).max(200),
+  language: z.string().max(50).optional(),
+});
+
+// ── Thumbnail Input (full UI form validation) ────────────────────────
+export const thumbnailInputSchema = z.object({
+  topic: z.string().min(1).max(500),
+  title: z.string().min(1).max(500),
+  hookText: z.string().min(1).max(200),
+  audience: z.string().min(1).max(100),
+  style: z.string().min(1).max(100),
+  mood: z.string().min(1).max(100),
+  includeFace: z.boolean().default(false),
+  includeText: z.boolean().default(true),
+  includeLogo: z.boolean().default(false),
+  background: z.string().min(1).max(100),
+  brand: z.string().max(100).optional(),
+  colorPreference: z.string().max(100).optional(),
+  hasReferenceFace: z.boolean().default(false),
+  hasReferenceStyle: z.boolean().default(false),
+  safeTextMode: z.boolean().default(false),
+  variations: z.number().int().min(1).max(4).default(1),
+});
+
+// ── Music Generation ─────────────────────────────────────────────────
+export const musicGenerateSchema = z.object({
+  prompt: z.string().min(1).max(2000),
+  isInstrumental: z.boolean().optional().default(true),
+  sampleRate: z.number().int().min(8000).max(48000).optional(),
+  bitrate: z.number().int().min(32000).max(320000).optional(),
+  format: z.string().max(20).optional(),
+  saveToAssets: z.boolean().optional().default(true),
+});
+
+// ── Image Generation ─────────────────────────────────────────────────
+export const imageGenerateSchema = z.object({
+  prompt: z.string().min(1).max(4000),
+  aspectRatio: z.string().max(20).optional().default("16:9"),
+  n: z.number().int().min(1).max(4).optional().default(1),
+  saveToAssets: z.boolean().optional().default(true),
+  referenceImage: z.string().max(500000).optional(), // base64 encoded image
+  referenceType: z.enum(["face", "style"]).optional(),
+});
+
+// ── Video Generation ─────────────────────────────────────────────────
+export const videoGenerateSchema = z.object({
+  prompt: z.string().min(1).max(2000),
+  imageUrl: z.string().url().max(2000).optional(),
+  duration: z.number().min(1).max(60).optional(),
+  saveToAssets: z.boolean().optional().default(true),
+});
+
+// ── Pipeline ──────────────────────────────────────────────────────────
+export const pipelineSchema = z.object({
+  briefing: z.string().min(1).max(2000),
+  steps: z.array(z.enum(["script", "thumbnail", "music", "video"])).max(4).optional(),
+  generateThumbnail: z.boolean().optional().default(false),
+  generateMusic: z.boolean().optional().default(false),
+  generateVideo: z.boolean().optional().default(false),
+  thumbnailPromptParams: z.object({
+    theme: z.string().max(500).optional(),
+    title: z.string().max(500).optional(),
+    style: z.string().max(200).optional(),
+    text: z.string().max(200).optional(),
+  }).optional(),
+  musicPromptParams: z.object({
+    prompt: z.string().max(2000).optional(),
+  }).optional(),
+  videoPromptParams: z.object({
+    prompt: z.string().max(2000).optional(),
+    duration: z.string().max(20).optional(),
+    style: z.string().max(200).optional(),
+  }).optional(),
+});
+
+// ── Generate (legacy pipeline) ───────────────────────────────────────
+export const generateSchema = z.object({
+  briefing: z.string().min(1).max(2000),
+});
+
+// ── Asset Update ──────────────────────────────────────────────────────
+export const assetUpdateSchema = z.object({
+  title: z.string().max(500).optional(),
+  description: z.string().max(2000).optional(),
+  content: z.string().optional(),
+  tags: z.array(z.string().max(200)).max(50).optional(),
+  favorite: z.boolean().optional(),
+});
+
+// ── Export Update ─────────────────────────────────────────────────────
+export const exportUpdateSchema = z.object({
+  title: z.string().max(500).optional(),
+  status: z.enum(["completed", "processing", "failed", "pending"]).optional(),
+  progress: z.number().min(0).max(100).optional(),
+  files: z.array(z.string().max(1000)).max(100).optional(),
+});
+
+// ── Video/Music Status ───────────────────────────────────────────────
+export const jobStatusSchema = z.object({
+  jobId: z.string().min(1).max(200),
+});
+
+// ── Helper: validate and return typed data or 400 ────────────────────
+export function validateOr400<T>(
+  schema: z.ZodSchema<T>,
+  data: unknown
+): { success: true; data: T } | { success: false; error: string } {
+  const result = schema.safeParse(data);
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+  const error = result.error.issues
+    .map((i) => `${i.path.join(".")}: ${i.message}`)
+    .join("; ");
+  return { success: false, error };
+}
