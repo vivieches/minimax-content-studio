@@ -1,5 +1,5 @@
 
-import { getResolvedConfig, createMiniMaxHeaders } from "./config";
+import { getResolvedConfig, createMiniMaxHeaders, type MiniMaxConfig } from "./config";
 import { classifyMiniMaxError } from "./errors";
 import type { JobStatusResponse } from "./types";
 
@@ -9,8 +9,10 @@ export async function generateVideo(params: {
   prompt: string;
   imageUrl?: string;
   duration?: number;
+  model?: string;
+  config?: MiniMaxConfig;
 }): Promise<{ jobId: string; status: string }> {
-  const config = await getResolvedConfig();
+  const config = params.config ?? await getResolvedConfig();
 
   if (!config.apiKey) {
     const { isEffectiveDemoMode } = await import("./client");
@@ -25,7 +27,9 @@ export async function generateVideo(params: {
     throw new Error("MINIMAX_API_KEY is not configured. Please go to Settings and enter your MiniMax API key.");
   }
 
-  if (!config.videoModel) {
+  const model = params.model || config.videoModel;
+
+  if (!model) {
     const jobId = `video-placeholder-${Date.now()}`;
     pendingJobs.set(jobId, {
       status: "failed",
@@ -42,7 +46,7 @@ export async function generateVideo(params: {
       method: "POST",
       headers: createMiniMaxHeaders(config),
       body: JSON.stringify({
-        model: config.videoModel,
+        model,
         prompt,
         image_url: imageUrl ?? undefined,
         duration,

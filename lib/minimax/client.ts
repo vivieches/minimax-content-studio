@@ -1,8 +1,10 @@
-import { getResolvedConfig, createMiniMaxHeaders } from "./config";
+import { getResolvedConfig, createMiniMaxHeaders, type MiniMaxConfig } from "./config";
 import { classifyMiniMaxError, MiniMaxError } from "./errors";
 
-export async function testConnection(): Promise<{ ok: boolean; models: string[]; error?: string }> {
-  const config = await getResolvedConfig();
+export async function testConnection(
+  configOverride?: MiniMaxConfig
+): Promise<{ ok: boolean; models: string[]; error?: string }> {
+  const config = configOverride ?? await getResolvedConfig();
 
   if (!config.apiKey) {
     return { ok: false, models: [], error: "API Key not configured. Please set MINIMAX_API_KEY in Settings." };
@@ -33,8 +35,12 @@ export async function testConnection(): Promise<{ ok: boolean; models: string[];
   }
 }
 
-export async function listModels(): Promise<string[]> {
-  const config = await getResolvedConfig();
+export async function listModels(configOverride?: MiniMaxConfig): Promise<string[]> {
+  const config = configOverride ?? await getResolvedConfig();
+  if (!config.apiKey) {
+    throw new MiniMaxError("MINIMAX_API_KEY is not configured. Please go to Settings to add your API key.", 401);
+  }
+
   const response = await fetch(`${config.baseUrl}/v1/models`, {
     method: "GET",
     headers: createMiniMaxHeaders(config),

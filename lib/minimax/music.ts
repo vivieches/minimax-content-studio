@@ -1,4 +1,4 @@
-import { getResolvedConfig, createMiniMaxHeaders } from "./config";
+import { getResolvedConfig, createMiniMaxHeaders, type MiniMaxConfig } from "./config";
 import { classifyMiniMaxError } from "./errors";
 import type { JobStatusResponse } from "./types";
 
@@ -10,8 +10,10 @@ export async function generateMusic(params: {
   sampleRate?: number;
   bitrate?: number;
   format?: string;
+  model?: string;
+  config?: MiniMaxConfig;
 }): Promise<{ jobId?: string; audioUrl: string; rawData: string; error: string }> {
-  const config = await getResolvedConfig();
+  const config = params.config ?? await getResolvedConfig();
 
   if (!config.apiKey) {
     const { isEffectiveDemoMode } = await import("./client");
@@ -31,7 +33,7 @@ export async function generateMusic(params: {
     method: "POST",
     headers: createMiniMaxHeaders(config),
     body: JSON.stringify({
-      model: config.musicModel || "music-2.6",
+      model: params.model || config.musicModel || "music-2.6",
       prompt,
       is_instrumental: isInstrumental,
       output_format: "url",

@@ -1,15 +1,17 @@
-import { getResolvedConfig, createMiniMaxHeaders } from "./config";
+import { getResolvedConfig, createMiniMaxHeaders, type MiniMaxConfig } from "./config";
 import { classifyMiniMaxError } from "./errors";
 
 interface TextGenerateParams {
   systemPrompt: string;
   userMessage: string;
+  model?: string;
   maxTokens?: number;
   temperature?: number;
+  config?: MiniMaxConfig;
 }
 
 export async function generateText(params: TextGenerateParams): Promise<string> {
-  const config = await getResolvedConfig();
+  const config = params.config ?? await getResolvedConfig();
   const { systemPrompt, userMessage, maxTokens = 4096, temperature = 0.7 } = params;
 
   if (!config.apiKey) {
@@ -24,7 +26,7 @@ export async function generateText(params: TextGenerateParams): Promise<string> 
     method: "POST",
     headers: createMiniMaxHeaders(config),
     body: JSON.stringify({
-      model: config.textModel,
+      model: params.model || config.textModel,
       messages: [
         { role: "system", name: "MiniMax AI", content: systemPrompt },
         { role: "user", name: "user", content: userMessage },

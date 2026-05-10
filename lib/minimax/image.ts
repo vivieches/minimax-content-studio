@@ -1,10 +1,12 @@
-import { getResolvedConfig, createMiniMaxHeaders } from "./config";
+import { getResolvedConfig, createMiniMaxHeaders, type MiniMaxConfig } from "./config";
 import { classifyMiniMaxError } from "./errors";
 
 export interface GenerateImageParams {
   prompt: string;
   aspectRatio?: string;
   n?: number;
+  model?: string;
+  config?: MiniMaxConfig;
   responseFormat?: "url" | "b64_json";
   promptOptimizer?: boolean;
   referenceImage?: string; // base64 data URL
@@ -27,7 +29,7 @@ export async function generateImage(params: GenerateImageParams): Promise<{
   base64s: string[];
   finalPrompt: string;
 }> {
-  const config = await getResolvedConfig();
+  const config = params.config ?? await getResolvedConfig();
 
   if (!config.apiKey) {
     const { isEffectiveDemoMode } = await import("./client");
@@ -52,7 +54,7 @@ export async function generateImage(params: GenerateImageParams): Promise<{
 
   // Build request body
   const requestBody: Record<string, unknown> = {
-    model: config.imageModel || "image-01",
+    model: params.model || config.imageModel || "image-01",
     prompt: finalPrompt,
     aspect_ratio: aspectRatio,
     response_format: responseFormat,
