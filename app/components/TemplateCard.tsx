@@ -23,7 +23,7 @@ export function TemplateCard({ title, description, tag, iconColor, href }: Templ
   const TagIcon = tagIcons[tag] ?? FileText;
 
   return (
-    <Link href={href} className="group block bg-card border border-line rounded-2xl p-5 hover:border-line-hi hover:-translate-y-0.5 transition-all duration-200">
+      <Link href={href} className="group block bg-card border border-line rounded-lg p-5 hover:border-line-hi hover:-translate-y-0.5 transition-all duration-200">
       <div
         className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
         style={{ backgroundColor: `${iconColor}18` }}

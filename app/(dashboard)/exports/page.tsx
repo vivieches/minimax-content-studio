@@ -157,7 +157,7 @@ export default function ExportsPage() {
             {filtered.map((exp) => (
               <div
                 key={exp.id}
-                className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-line hover:border-line-hi transition-all"
+                className="flex items-center gap-4 p-4 rounded-lg bg-card border border-line hover:border-line-hi transition-all"
               >
                 <div className="w-10 h-10 rounded-xl bg-hover flex items-center justify-center flex-shrink-0">
                   {typeIcon(exp.type)}

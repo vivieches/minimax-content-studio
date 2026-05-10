@@ -26,7 +26,7 @@ function AssetCardComponent({ asset, onDelete, onToggleFavorite, onDownload }: {
   const label = config.labelKey ? t(config.labelKey) : asset.type;
 
   return (
-    <div className="group relative bg-card border border-line rounded-2xl overflow-hidden hover:border-line-hi transition-all duration-150">
+    <div className="group relative bg-card border border-line rounded-lg overflow-hidden hover:border-line-hi transition-all duration-150">
       <div className={`aspect-video ${config.bg} flex items-center justify-center relative`}>
         {asset.thumbnailPath ? (
           <Image

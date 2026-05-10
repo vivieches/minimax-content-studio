@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "Minimax Dashboard — Redesign",
+  "entry": "dashboard-redesign.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-05-10T00:53:06.542Z",
+  "updatedAt": "2026-05-10T00:53:06.567Z",
+  "metadata": {
+    "identifier": "dashboard-redesign",
+    "artifactType": "text/html",
+    "inferred": false
+  }
+}

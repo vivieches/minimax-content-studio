@@ -296,7 +296,7 @@ export default function ScriptGeneratorPage() {
         </div>
 
         {!generated && (
-          <div className="mb-4 bg-card border border-line rounded-2xl p-5">
+          <div className="mb-4 bg-card border border-line rounded-lg p-5">
             <label className="block text-sm font-medium text-ink mb-2">{t("scripts.ideaLabel")}</label>
             <textarea
               value={idea}
@@ -315,7 +315,7 @@ export default function ScriptGeneratorPage() {
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr_250px] gap-4 min-h-0">
           {/* Settings */}
           <div className="min-h-0">
-            <div className="flex flex-col h-full bg-card border border-line rounded-2xl overflow-hidden">
+            <div className="flex flex-col h-full bg-card border border-line rounded-lg overflow-hidden">
               <div className="px-5 pt-5 pb-3">
                 <h3 className="text-sm font-semibold text-ink">{t("scripts.settings")}</h3>
               </div>
@@ -365,7 +365,7 @@ export default function ScriptGeneratorPage() {
 
           {/* Script Content */}
           <div className="min-h-0">
-            <div className="flex flex-col h-full bg-card border border-line rounded-2xl overflow-hidden">
+            <div className="flex flex-col h-full bg-card border border-line rounded-lg overflow-hidden">
               <div className="flex items-center justify-between px-5 pt-5 pb-3">
                 <h3 className="text-sm font-semibold text-ink">
                   {genTitle || t("scripts.generatedTitle")}
@@ -476,7 +476,7 @@ export default function ScriptGeneratorPage() {
 
           {/* Insights */}
           <div className="min-h-0">
-            <div className="flex flex-col h-full bg-card border border-line rounded-2xl overflow-hidden">
+            <div className="flex flex-col h-full bg-card border border-line rounded-lg overflow-hidden">
               <div className="px-5 pt-5 pb-3">
                 <h3 className="text-sm font-semibold text-ink">{t("scripts.insights")}</h3>
               </div>

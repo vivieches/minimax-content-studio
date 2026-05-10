@@ -45,7 +45,7 @@ const inputClass =
 const selectClass =
   "w-full px-3 py-2.5 rounded-xl bg-card-hi border border-line text-ink text-sm focus:border-accent/50 transition-all appearance-none cursor-pointer";
 const labelClass = "block text-xs font-medium text-ink-2 mb-1.5";
-const sectionClass = "p-5 rounded-2xl bg-card border border-line mb-4";
+const sectionClass = "p-5 rounded-lg bg-card border border-line mb-4";
 
 export default function SettingsPage() {
   const { t } = useT();

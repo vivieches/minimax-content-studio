@@ -264,7 +264,7 @@ export default function ThumbnailGeneratorPage() {
         {/* Main Grid */}
         <div className="flex-1 grid grid-cols-1 xl:grid-cols-[380px_1fr] gap-5 min-h-0">
           {/* ── Left Panel: Settings ───────────────────────────────── */}
-          <div className="min-h-0 bg-card border border-line rounded-2xl p-5 overflow-y-auto">
+          <div className="min-h-0 bg-card border border-line rounded-lg p-5 overflow-y-auto">
             <h3 className="text-sm font-semibold text-ink mb-5 flex items-center gap-2">
               <Wand2 className="w-4 h-4 text-accent" />
               {t("thumbnails.settings")}
@@ -607,7 +607,7 @@ export default function ThumbnailGeneratorPage() {
           </div>
 
           {/* ── Right Panel: Output ────────────────────────────────── */}
-          <div className="min-h-0 bg-card border border-line rounded-2xl p-5 overflow-y-auto">
+          <div className="min-h-0 bg-card border border-line rounded-lg p-5 overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-ink">
                 {results ? t("thumbnails.generated") : t("thumbnails.preview")}
@@ -767,7 +767,7 @@ export default function ThumbnailGeneratorPage() {
             ) : !loading ? (
               /* Empty State */
               <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-card-hi border border-line flex items-center justify-center">
+                <div className="w-16 h-16 rounded-lg bg-card-hi border border-line flex items-center justify-center">
                   <ImagePlus className="w-8 h-8 text-ink-3" />
                 </div>
                 <div>

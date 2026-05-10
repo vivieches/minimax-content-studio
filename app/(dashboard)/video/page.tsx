@@ -10,7 +10,7 @@ export default function VideoPage() {
     <main className="flex-1 overflow-y-auto overflow-x-hidden">
       <div className="flex flex-col items-center justify-center h-full px-6">
         <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-red-400/10 border border-red-400/20 flex items-center justify-center mx-auto mb-6">
+          <div className="w-16 h-16 rounded-lg bg-red-400/10 border border-red-400/20 flex items-center justify-center mx-auto mb-6">
             <Video className="w-7 h-7 text-red-400" strokeWidth={1.5} />
           </div>
           <h1 className="text-2xl font-bold text-ink mb-2">{t("video.title")}</h1>

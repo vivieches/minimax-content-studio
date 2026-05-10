@@ -84,7 +84,7 @@ export function AssetCard({ title, type, time, duration, imageUrl, gradient }: A
   };
 
   return (
-    <div className="group bg-[#0F1118] border border-white/[0.08] rounded-2xl overflow-hidden hover:border-[#8B5CF6]/25 hover:shadow-[0_0_20px_rgba(139,92,246,0.08)] transition-all duration-200 cursor-pointer">
+    <div className="group bg-[#11151b] border border-white/[0.07] rounded-lg overflow-hidden hover:border-[#8B5CF6]/25 hover:shadow-[0_0_20px_rgba(139,92,246,0.08)] transition-all duration-200 cursor-pointer">
       {/* Preview */}
       <div className="relative">
         {renderPreview()}

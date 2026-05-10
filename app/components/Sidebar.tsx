@@ -13,41 +13,26 @@ import {
   LayoutTemplate,
   Download,
   Settings,
-  Sun,
   Menu,
   X,
 } from "lucide-react";
-import { useT } from "@/lib/i18n";
-import { useTheme } from "@/lib/theme";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
-const navGroups = [
-  {
-    items: [{ icon: Home, labelKey: "nav.home", href: "/" }],
-  },
-  {
-    labelKey: "nav.create",
-    items: [
-      { icon: Layers, labelKey: "nav.pipeline", href: "/pipeline" },
-      { icon: FileText, labelKey: "nav.scripts", href: "/scripts" },
-      { icon: Image, labelKey: "nav.thumbnails", href: "/thumbnails" },
-      { icon: Music, labelKey: "nav.music", href: "/music" },
-    ],
-  },
-  {
-    labelKey: "nav.library",
-    items: [
-      { icon: Box, labelKey: "nav.assets", href: "/assets" },
-      { icon: LayoutTemplate, labelKey: "nav.templates", href: "/templates" },
-      { icon: Download, labelKey: "nav.exports", href: "/exports" },
-    ],
-  },
+const navItems = [
+  { icon: Home, label: "Inicio", href: "/" },
+  { icon: Layers, label: "Proyectos", href: "/pipeline" },
+  { icon: FileText, label: "Guiones", href: "/scripts" },
+  { icon: Image, label: "Miniaturas", href: "/thumbnails" },
+  { icon: Music, label: "Música", href: "/music" },
+  { icon: Box, label: "Assets", href: "/assets" },
+  { icon: LayoutTemplate, label: "Plantillas", href: "/templates" },
+  { icon: Download, label: "Exports", href: "/exports" },
 ];
+
+const bottomItems = [{ icon: Settings, label: "Ajustes", href: "/settings" }];
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { t } = useT();
-  const { toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isActive = (href: string) =>
@@ -55,88 +40,71 @@ export function Sidebar() {
 
   const sidebarContent = (
     <>
-      {/* Logo */}
-      <div className="flex items-center gap-2.5 px-5 pt-5 pb-4">
-        <div className="w-7 h-7 rounded-lg bg-accent-soft flex items-center justify-center flex-shrink-0">
-          <img
-            src="/minimax-logo.svg"
-            alt="MiniMax"
-            className="w-4 h-4 object-contain"
-          />
+      <div className="flex items-center justify-center pb-[41px] pt-7">
+        <div className="flex h-[43px] w-[43px] flex-shrink-0 items-center justify-center rounded-lg border border-white/[0.07] bg-[#171920] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+          <span className="select-none text-[14px] font-bold text-accent">OS</span>
         </div>
-        <span className="text-[13.5px] font-semibold text-ink tracking-tight leading-none">
-          MiniMax Studio
-        </span>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 overflow-y-auto py-1 space-y-4">
-        {navGroups.map((group, gi) => (
-          <div key={gi}>
-            {group.labelKey && (
-              <p className="px-3 mb-1 text-[10px] font-semibold text-ink-3 uppercase tracking-widest select-none">
-                {t(group.labelKey)}
-              </p>
-            )}
-            <div className="space-y-px">
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item.href);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-2.5 px-3 py-[7px] rounded-lg text-[13px] font-medium transition-colors duration-100 ${
-                      active
-                        ? "bg-accent-soft text-accent"
-                        : "text-ink-2 hover:bg-hover hover:text-ink"
-                    }`}
-                  >
-                    <Icon
-                      className={`w-[15px] h-[15px] flex-shrink-0 transition-colors ${
-                        active ? "text-accent" : "text-ink-3"
-                      }`}
-                      strokeWidth={active ? 2 : 1.5}
-                    />
-                    <span>{t(item.labelKey)}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+      <nav className="flex-1 space-y-[19px] px-3">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              title={item.label}
+              onClick={() => setMobileOpen(false)}
+              className={`
+                group relative flex h-[45px] w-full items-center justify-center rounded-md
+                transition-all duration-200
+                ${
+                  active
+                    ? "bg-[#171821] text-accent"
+                    : "text-[#8B91A2] hover:bg-white/[0.05] hover:text-[#F4F6FA]"
+                }
+              `}
+              aria-current={active ? "page" : undefined}
+            >
+              <Icon className="h-5 w-5" strokeWidth={1.5} />
+              {active && (
+                <span className="absolute -right-3 top-1/2 h-[41px] w-[2px] -translate-y-1/2 rounded-l-full bg-accent" />
+              )}
+            </Link>
+          );
+        })}
       </nav>
 
-      {/* Bottom */}
-      <div className="px-3 pb-4 pt-3 border-t border-line space-y-px">
-        <Link
-          href="/settings"
-          onClick={() => setMobileOpen(false)}
-          className={`flex items-center gap-2.5 px-3 py-[7px] rounded-lg text-[13px] font-medium transition-colors duration-100 ${
-            pathname === "/settings"
-              ? "bg-accent-soft text-accent"
-              : "text-ink-2 hover:bg-hover hover:text-ink"
-          }`}
-        >
-          <Settings
-            className={`w-[15px] h-[15px] flex-shrink-0 ${
-              pathname === "/settings" ? "text-accent" : "text-ink-3"
-            }`}
-            strokeWidth={pathname === "/settings" ? 2 : 1.5}
-          />
-          <span>{t("nav.settings")}</span>
-        </Link>
+      <div className="space-y-5 px-3 pb-6">
+        {bottomItems.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              title={item.label}
+              onClick={() => setMobileOpen(false)}
+              className={`
+                relative flex h-[35px] w-full items-center justify-center rounded-md
+                transition-all duration-200
+                ${
+                  active
+                    ? "bg-[#171821] text-accent"
+                    : "text-[#8B91A2] hover:bg-white/[0.05] hover:text-[#F4F6FA]"
+                }
+              `}
+            >
+              <Icon className="h-5 w-5" strokeWidth={1.5} />
+              {active && (
+                <span className="absolute -right-3 top-1/2 h-[35px] w-[2px] -translate-y-1/2 rounded-l-full bg-accent" />
+              )}
+            </Link>
+          );
+        })}
 
-        <div className="flex items-center gap-1 pt-1">
-          <button
-            onClick={toggleTheme}
-            title={t("nav.toggleTheme")}
-            className="flex flex-1 items-center gap-2.5 px-3 py-[7px] rounded-lg text-[13px] text-ink-2 hover:bg-hover hover:text-ink transition-colors duration-100"
-          >
-            <Sun className="w-[15px] h-[15px] text-ink-3" strokeWidth={1.5} />
-            <span className="text-[12px]">{t("nav.theme")}</span>
-          </button>
+        <div className="flex h-[35px] w-full items-center justify-center">
           <LanguageSwitcher />
         </div>
       </div>
@@ -145,36 +113,33 @@ export function Sidebar() {
 
   return (
     <>
-      <div className="md:hidden fixed inset-x-0 top-0 z-40 flex h-[52px] items-center justify-between border-b border-line bg-sidebar px-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-accent-soft flex items-center justify-center flex-shrink-0">
-            <img src="/minimax-logo.svg" alt="MiniMax" className="w-4 h-4 object-contain" />
-          </div>
-          <span className="text-[13.5px] font-semibold text-ink tracking-tight leading-none">
-            MiniMax Studio
-          </span>
-        </div>
-        <button
-          onClick={() => setMobileOpen((open) => !open)}
-          className="w-9 h-9 rounded-lg bg-hover flex items-center justify-center text-ink-2 hover:text-ink"
-          aria-label={mobileOpen ? t("nav.closeNavigation") : t("nav.openNavigation")}
-        >
-          {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-        </button>
-      </div>
+      <button
+        className="fixed left-4 top-3.5 z-[60] flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-card md:hidden"
+        onClick={() => setMobileOpen(!mobileOpen)}
+        aria-label={mobileOpen ? "Cerrar navegación" : "Abrir navegación"}
+      >
+        {mobileOpen ? (
+          <X className="h-4 w-4 text-ink" />
+        ) : (
+          <Menu className="h-4 w-4 text-ink" />
+        )}
+      </button>
 
       {mobileOpen && (
-        <div className="md:hidden fixed inset-0 z-30 bg-black/50" onClick={() => setMobileOpen(false)}>
-          <aside
-            className="flex flex-col w-[264px] h-screen bg-sidebar border-r border-line"
-            onClick={(event) => event.stopPropagation()}
-          >
-            {sidebarContent}
-          </aside>
-        </div>
+        <div
+          className="fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm md:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
       )}
 
-      <aside className="hidden md:flex flex-col w-[232px] h-screen bg-sidebar border-r border-line flex-shrink-0">
+      <aside
+        className={`
+          fixed left-0 top-0 z-[56] flex h-screen w-[95px] flex-col
+          border-r border-line bg-sidebar transition-transform duration-300 ease-out
+          md:sticky md:z-auto
+          ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+        `}
+      >
         {sidebarContent}
       </aside>
     </>

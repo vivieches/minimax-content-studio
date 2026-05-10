@@ -32,30 +32,30 @@
   --color-ok-soft:       var(--mm-ok-soft);
   --color-warn:          var(--mm-warn);
   /* Typography */
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   DARK THEME — default
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+   DARK THEME — default (Open Studio Premium Dark)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 :root {
   color-scheme: dark;
   --mm-canvas:        #0C0D12;
   --mm-sidebar:       #0E0F15;
-  --mm-card:          #111318;
+  --mm-card:          #11131A;
   --mm-card-hi:       #161820;
   --mm-line:          rgba(255, 255, 255, 0.07);
-  --mm-line-hi:       rgba(255, 255, 255, 0.12);
-  --mm-ink:           #EFF1FA;
-  --mm-ink-2:         #8A8FA8;
-  --mm-ink-3:         #505470;
-  --mm-accent:        #FF4B8B;
-  --mm-accent-hi:     #FF6BA3;
-  --mm-accent-soft:   rgba(255, 75, 139, 0.12);
+  --mm-line-hi:       rgba(255, 255, 255, 0.14);
+  --mm-ink:           #F4F6FA;
+  --mm-ink-2:         #9CA3AF;
+  --mm-ink-3:         #6B7280;
+  --mm-accent:        #FF4FA3;
+  --mm-accent-hi:     #FF6AB7;
+  --mm-accent-soft:   rgba(255, 79, 163, 0.12);
   --mm-accent-fg:     #FFFFFF;
-  --mm-accent-grad:   linear-gradient(135deg, #FF4B8B 0%, #FF8035 100%);
-  --mm-hover:         rgba(255, 255, 255, 0.045);
+  --mm-accent-grad:   linear-gradient(135deg, #FF4FA3 0%, #A855F7 100%);
+  --mm-hover:         rgba(255, 255, 255, 0.05);
   --mm-danger:        #F87171;
   --mm-danger-soft:   rgba(248, 113, 113, 0.12);
   --mm-ok:            #34D399;
@@ -88,6 +88,30 @@ html.light {
   --mm-ok:            #059669;
   --mm-ok-soft:       rgba(5, 150, 105, 0.10);
   --mm-warn:          #D97706;
+}
+
+.dashboard-dark {
+  color-scheme: dark;
+  --mm-canvas:        #0C0D12;
+  --mm-sidebar:       #0E0F15;
+  --mm-card:          #11131A;
+  --mm-card-hi:       #161820;
+  --mm-line:          rgba(255, 255, 255, 0.07);
+  --mm-line-hi:       rgba(255, 255, 255, 0.14);
+  --mm-ink:           #F4F6FA;
+  --mm-ink-2:         #9CA3AF;
+  --mm-ink-3:         #6B7280;
+  --mm-accent:        #FF4FA3;
+  --mm-accent-hi:     #FF6AB7;
+  --mm-accent-soft:   rgba(255, 79, 163, 0.12);
+  --mm-accent-fg:     #FFFFFF;
+  --mm-accent-grad:   linear-gradient(135deg, #FF4FA3 0%, #A855F7 100%);
+  --mm-hover:         rgba(255, 255, 255, 0.05);
+  --mm-danger:        #F87171;
+  --mm-danger-soft:   rgba(248, 113, 113, 0.12);
+  --mm-ok:            #34D399;
+  --mm-ok-soft:       rgba(52, 211, 153, 0.12);
+  --mm-warn:          #FBBF24;
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

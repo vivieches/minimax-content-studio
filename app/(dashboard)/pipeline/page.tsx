@@ -168,7 +168,7 @@ export default function PipelineBuilderPage() {
 
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-5 min-h-0">
           {/* Canvas */}
-          <div className="min-h-0 bg-card border border-line rounded-2xl p-6 overflow-y-auto">
+          <div className="min-h-0 bg-card border border-line rounded-lg p-6 overflow-y-auto">
             <div className="mb-6">
               <textarea
                 value={briefing}
@@ -223,7 +223,7 @@ export default function PipelineBuilderPage() {
           </div>
 
           {/* Settings */}
-          <div className="min-h-0 bg-card border border-line rounded-2xl p-5 overflow-y-auto">
+          <div className="min-h-0 bg-card border border-line rounded-lg p-5 overflow-y-auto">
             <h3 className="text-sm font-semibold text-ink mb-3">{t("pipeline.steps")}</h3>
             <div className="space-y-2">
               {pipelineSteps.map((step) => {

@@ -11,7 +11,7 @@ interface ProjectCardProps {
 
 export function ProjectCard({ imageUrl, title, category, time }: ProjectCardProps) {
   return (
-    <div className="group relative bg-card border border-line rounded-2xl overflow-hidden hover:border-line-hi hover:-translate-y-0.5 transition-all duration-200 cursor-pointer">
+    <div className="group relative bg-card border border-line rounded-lg overflow-hidden hover:border-line-hi hover:-translate-y-0.5 transition-all duration-200 cursor-pointer">
       {/* Image */}
       <div className="relative aspect-video overflow-hidden">
         <img

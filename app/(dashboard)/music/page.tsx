@@ -126,7 +126,7 @@ export default function MusicGeneratorPage() {
 
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-[250px_1fr_210px] grid-rows-[auto_auto] gap-5 min-h-0">
           {/* Settings */}
-          <div className="row-span-2 min-h-0 bg-card border border-line rounded-2xl p-5 overflow-y-auto">
+          <div className="row-span-2 min-h-0 bg-card border border-line rounded-lg p-5 overflow-y-auto">
             <h3 className="text-sm font-semibold text-ink mb-4">{t("music.settings")}</h3>
             <div className="space-y-4">
               <div>
@@ -193,7 +193,7 @@ export default function MusicGeneratorPage() {
           </div>
 
           {/* Player */}
-          <div className="min-h-0 bg-card border border-line rounded-2xl p-6 flex flex-col items-center justify-center">
+          <div className="min-h-0 bg-card border border-line rounded-lg p-6 flex flex-col items-center justify-center">
             {loading ? (
               <div className="flex flex-col items-center gap-3">
                 <Loader2 className="w-10 h-10 text-accent animate-spin" />
@@ -201,7 +201,7 @@ export default function MusicGeneratorPage() {
               </div>
             ) : result?.audioUrl ? (
               <div className="flex flex-col items-center gap-4">
-                <div className="w-20 h-20 rounded-2xl bg-accent-soft border border-accent/20 flex items-center justify-center">
+                <div className="w-20 h-20 rounded-lg bg-accent-soft border border-accent/20 flex items-center justify-center">
                   <Music4 className="w-8 h-8 text-accent" />
                 </div>
                 <p className="text-sm font-medium text-ink">{mood} {genre}</p>
@@ -247,7 +247,7 @@ export default function MusicGeneratorPage() {
           </div>
 
           {/* Track Details */}
-          <div className="min-h-0 bg-card border border-line rounded-2xl p-5 overflow-y-auto">
+          <div className="min-h-0 bg-card border border-line rounded-lg p-5 overflow-y-auto">
             <h3 className="text-sm font-semibold text-ink mb-3">{t("music.trackDetails")}</h3>
             {result?.audioUrl ? (
               <div className="space-y-3">
@@ -264,7 +264,7 @@ export default function MusicGeneratorPage() {
           </div>
 
           {/* Recent */}
-          <div className="lg:col-span-2 min-h-0 bg-card border border-line rounded-2xl p-5">
+          <div className="lg:col-span-2 min-h-0 bg-card border border-line rounded-lg p-5">
             <h3 className="text-sm font-semibold text-ink mb-3">{t("music.recentGenerations")}</h3>
             {recentTracks.length > 0 ? (
               <div className="space-y-1">

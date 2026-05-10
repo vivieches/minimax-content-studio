@@ -10,7 +10,7 @@ export function ThumbnailPromptCard() {
   );
 
   return (
-    <div className="flex flex-col h-full bg-[#0F1118] border border-white/[0.08] rounded-2xl overflow-hidden">
+      <div className="flex flex-col h-full bg-[#11151b] border border-white/[0.07] rounded-lg overflow-hidden">
       <div className="flex-1 px-5 py-5 space-y-5 overflow-y-auto">
         {/* Prompt */}
         <div>

@@ -4,7 +4,7 @@ import { PipelineNode } from "./PipelineNode";
 
 export function PipelineCanvas() {
   return (
-    <div className="relative w-full h-full min-h-[520px] bg-[#080A10] border border-white/[0.08] rounded-2xl overflow-hidden">
+      <div className="relative w-full h-full min-h-[520px] bg-[#080A10] border border-white/[0.07] rounded-lg overflow-hidden">
       {/* Dotted grid background */}
       <div
         className="absolute inset-0"

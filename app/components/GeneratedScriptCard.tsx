@@ -51,7 +51,7 @@ If you found this helpful, hit that like button and subscribe for more AI breakd
 
 export function GeneratedScriptCard() {
   return (
-    <div className="flex flex-col h-full bg-[#0E1017] border border-white/[0.08] rounded-2xl overflow-hidden">
+      <div className="flex flex-col h-full bg-[#11151b] border border-white/[0.07] rounded-lg overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-5 pb-3">
         <h3 className="text-sm font-semibold text-white">Generated Script</h3>

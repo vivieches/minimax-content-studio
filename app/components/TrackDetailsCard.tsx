@@ -10,7 +10,7 @@ const details = [
 
 export function TrackDetailsCard() {
   return (
-    <div className="flex flex-col h-full bg-[#0F1118] border border-white/[0.08] rounded-2xl overflow-hidden">
+      <div className="flex flex-col h-full bg-[#11151b] border border-white/[0.07] rounded-lg overflow-hidden">
       <div className="px-5 pt-5 pb-3">
         <h3 className="text-sm font-semibold text-white">Track Details</h3>
       </div>
