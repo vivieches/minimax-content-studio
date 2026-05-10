@@ -1,79 +1,161 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  Key, Radio, Globe, Cpu, AlertTriangle, CheckCircle2,
-  XCircle, Loader2, Trash2, RefreshCw,
+  AlertTriangle,
+  CheckCircle2,
+  Cpu,
+  Globe,
+  Key,
+  Loader2,
+  Plug,
+  Radio,
+  RefreshCw,
+  Save,
+  Settings2,
+  Trash2,
+  XCircle,
 } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import type { ProviderCapability, ProviderManifest, ProviderStoredConfig } from "@/lib/providers/types";
+
+type SafeProviderConfig = Omit<ProviderStoredConfig, "apiKey"> & {
+  apiKey: string;
+  hasApiKey?: boolean;
+};
 
 interface AppSettings {
-  apiKey: string;
-  apiKeyType: "pay_as_you_go" | "token_plan";
-  baseUrl: string;
-  textModel: string;
-  textModelFast: string;
-  imageModel: string;
-  musicModel: string;
-  videoModel: string;
-  providerMode: "official-text-v2" | "openai-compatible" | "anthropic-compatible";
+  providers: Record<string, SafeProviderConfig>;
+  defaults: Record<ProviderCapability, { providerId: string; model: string }>;
   demoMode: boolean;
   debugMode: boolean;
   exportDirectory: string;
+  language: "en" | "pt" | "es";
   updatedAt: string;
-  hasApiKey?: boolean;
 }
 
-const defaultSettings: AppSettings = {
-  apiKey: "",
-  apiKeyType: "pay_as_you_go",
-  baseUrl: "https://api.minimax.io",
-  textModel: "MiniMax-M2.7",
-  textModelFast: "MiniMax-M2.7-highspeed",
-  imageModel: "image-01",
-  musicModel: "music-2.6",
-  videoModel: "",
-  providerMode: "official-text-v2",
-  demoMode: false,
-  debugMode: false,
-  exportDirectory: "",
-  updatedAt: "",
-};
+interface ProviderResponseItem extends ProviderManifest {
+  enabled: boolean;
+  hasApiKey: boolean;
+  configuredModels: Partial<Record<ProviderCapability, string>>;
+}
+
+const capabilities: ProviderCapability[] = ["text", "image", "audio", "video"];
 
 const inputClass =
   "w-full px-3 py-2.5 rounded-xl bg-card-hi border border-line text-ink text-sm focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all";
 const selectClass =
   "w-full px-3 py-2.5 rounded-xl bg-card-hi border border-line text-ink text-sm focus:border-accent/50 transition-all appearance-none cursor-pointer";
+const sectionClass = "p-5 rounded-2xl bg-card border border-line mb-4";
 const labelClass = "block text-xs font-medium text-ink-2 mb-1.5";
-const sectionClass = "p-5 rounded-lg bg-card border border-line mb-4";
+
+function emptySettings(): AppSettings {
+  return {
+    providers: {},
+    defaults: {
+      text: { providerId: "minimax", model: "MiniMax-M2.7" },
+      image: { providerId: "minimax", model: "image-01" },
+      audio: { providerId: "minimax", model: "music-2.6" },
+      video: { providerId: "minimax", model: "" },
+    },
+    demoMode: false,
+    debugMode: false,
+    exportDirectory: "",
+    language: "en",
+    updatedAt: "",
+  };
+}
+
+function capabilityLabel(capability: ProviderCapability): string {
+  return {
+    text: "Text",
+    image: "Image",
+    audio: "Audio",
+    video: "Video",
+  }[capability];
+}
 
 export default function SettingsPage() {
   const { t } = useT();
-  const [settings, setSettings] = useState<AppSettings>(defaultSettings);
+  const [settings, setSettings] = useState<AppSettings>(() => emptySettings());
+  const [providers, setProviders] = useState<ProviderResponseItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [testResult, setTestResult] = useState<{ ok: boolean; models: string[]; error?: string } | null>(null);
-  const [models, setModels] = useState<string[]>([]);
   const [saveMessage, setSaveMessage] = useState("");
-  const [showKey, setShowKey] = useState(false);
-  const [hasStoredApiKey, setHasStoredApiKey] = useState(false);
+  const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
+  const [testing, setTesting] = useState<Record<string, boolean>>({});
+  const [testResults, setTestResults] = useState<Record<string, { ok: boolean; models: string[]; error?: string }>>({});
 
-  async function loadSettings() {
+  const providerMap = useMemo(() => new Map(providers.map((provider) => [provider.id, provider])), [providers]);
+
+  async function loadData() {
     try {
-      const res = await fetch("/api/settings");
-      const data = await res.json();
-      if (data.ok) {
-        setHasStoredApiKey(Boolean(data.settings.hasApiKey));
-        setSettings({ ...defaultSettings, ...data.settings, apiKey: "" });
+      const [settingsRes, providersRes] = await Promise.all([
+        fetch("/api/settings"),
+        fetch("/api/providers"),
+      ]);
+      const [settingsData, providersData] = await Promise.all([
+        settingsRes.json(),
+        providersRes.json(),
+      ]);
+
+      if (providersData.ok) setProviders(providersData.providers);
+      if (settingsData.ok) {
+        const nextSettings = settingsData.settings as AppSettings;
+        const providersWithEditableKeys = Object.fromEntries(
+          Object.entries(nextSettings.providers).map(([providerId, config]) => [
+            providerId,
+            { ...config, apiKey: "" },
+          ])
+        );
+        setSettings({ ...nextSettings, providers: providersWithEditableKeys });
       }
-    } catch { } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
-    void Promise.resolve().then(loadSettings);
+    void loadData();
   }, []);
+
+  function updateProvider(providerId: string, partial: Partial<SafeProviderConfig>) {
+    setSettings((current) => ({
+      ...current,
+      providers: {
+        ...current.providers,
+        [providerId]: {
+          ...current.providers[providerId],
+          ...partial,
+          models: {
+            ...current.providers[providerId]?.models,
+            ...partial.models,
+          },
+          extra: {
+            ...current.providers[providerId]?.extra,
+            ...partial.extra,
+          },
+        },
+      },
+    }));
+  }
+
+  function updateDefault(capability: ProviderCapability, providerId: string, model?: string) {
+    const manifest = providerMap.get(providerId);
+    const configuredModel =
+      model ??
+      settings.providers[providerId]?.models?.[capability] ??
+      manifest?.defaultModels[capability] ??
+      "";
+
+    setSettings((current) => ({
+      ...current,
+      defaults: {
+        ...current.defaults,
+        [capability]: { providerId, model: configuredModel },
+      },
+    }));
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -85,77 +167,61 @@ export default function SettingsPage() {
         body: JSON.stringify(settings),
       });
       const data = await res.json();
-      if (data.ok) {
-        setHasStoredApiKey(Boolean(settings.apiKey.trim()) || Boolean(data.settings.hasApiKey));
-        setSettings((prev) => ({ ...prev, apiKey: "" }));
-        setSaveMessage(t("settings.saved"));
-        setTimeout(() => setSaveMessage(""), 3000);
-      } else {
-        setSaveMessage(`Error: ${data.error}`);
-      }
-    } catch (e) {
-      setSaveMessage(`Error: ${e instanceof Error ? e.message : "Failed to save"}`);
+      if (!data.ok) throw new Error(data.error || "Failed to save settings");
+      setSaveMessage(t("settings.saved"));
+      await loadData();
+    } catch (error) {
+      setSaveMessage(`Error: ${error instanceof Error ? error.message : "Failed to save settings"}`);
     } finally {
       setSaving(false);
+      setTimeout(() => setSaveMessage(""), 3000);
     }
   }
 
-  async function handleTestConnection() {
-    setTesting(true);
-    setTestResult(null);
+  async function testProvider(providerId: string) {
+    setTesting((current) => ({ ...current, [providerId]: true }));
     try {
-      const res = await fetch("/api/minimax/test-connection");
+      await handleSave();
+      const res = await fetch(`/api/providers/${providerId}/test`);
       const data = await res.json();
-      setTestResult(data);
-      if (data.ok) setModels(data.models);
-    } catch (e) {
-      setTestResult({ ok: false, models: [], error: e instanceof Error ? e.message : "Connection test failed" });
+      setTestResults((current) => ({ ...current, [providerId]: data }));
+    } catch (error) {
+      setTestResults((current) => ({
+        ...current,
+        [providerId]: {
+          ok: false,
+          models: [],
+          error: error instanceof Error ? error.message : "Connection failed",
+        },
+      }));
     } finally {
-      setTesting(false);
+      setTesting((current) => ({ ...current, [providerId]: false }));
     }
-  }
-
-  async function handleRefreshModels() {
-    setRefreshing(true);
-    try {
-      const res = await fetch("/api/minimax/models");
-      const data = await res.json();
-      if (data.ok) setModels(data.models);
-    } catch { } finally { setRefreshing(false); }
   }
 
   async function handleClearAssets() {
     if (!confirm(t("settings.clearConfirm"))) return;
-    try {
-      await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "clear_assets" }),
-      });
-      setSaveMessage(t("settings.clearSuccess"));
-      setTimeout(() => setSaveMessage(""), 3000);
-    } catch (e) {
-      setSaveMessage(`Error: ${e instanceof Error ? e.message : "Failed to clear assets"}`);
-    }
+    await fetch("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "clear_assets" }),
+    });
+    setSaveMessage(t("settings.clearSuccess"));
+    setTimeout(() => setSaveMessage(""), 3000);
   }
 
   async function handleResetSettings() {
     if (!confirm(t("settings.resetConfirm"))) return;
-    try {
-      const res = await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "reset" }),
-      });
-      const data = await res.json();
-      if (data.ok) {
-        setHasStoredApiKey(Boolean(data.settings.hasApiKey));
-        setSettings({ ...defaultSettings, ...data.settings, apiKey: "" });
-        setSaveMessage(t("settings.resetSuccess"));
-        setTimeout(() => setSaveMessage(""), 3000);
-      }
-    } catch (e) {
-      setSaveMessage(`Error: ${e instanceof Error ? e.message : "Failed to reset"}`);
+    const res = await fetch("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "reset" }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      setSaveMessage(t("settings.resetSuccess"));
+      await loadData();
+      setTimeout(() => setSaveMessage(""), 3000);
     }
   }
 
@@ -169,13 +235,12 @@ export default function SettingsPage() {
 
   return (
     <main className="flex-1 overflow-y-auto overflow-x-hidden">
-      <div className="flex flex-col px-6 py-6 lg:px-8 lg:py-8 max-w-[720px]">
+      <div className="flex flex-col px-6 py-6 lg:px-8 lg:py-8 max-w-[1040px]">
         <div className="mb-6">
           <h1 className="text-xl font-bold text-ink mb-1">{t("settings.title")}</h1>
           <p className="text-sm text-ink-2">{t("settings.subtitle")}</p>
         </div>
 
-        {/* Security notice */}
         <div className="flex items-start gap-3 p-4 rounded-xl bg-card border border-warn/20 mb-6">
           <AlertTriangle className="w-5 h-5 text-warn mt-0.5 flex-shrink-0" strokeWidth={1.5} />
           <div>
@@ -196,206 +261,239 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* API Section */}
-        <div className={sectionClass}>
-          <div className="flex items-center gap-2 mb-4">
-            <Key className="w-4 h-4 text-accent" strokeWidth={1.5} />
-            <h2 className="text-sm font-semibold text-ink">{t("settings.apiSection")}</h2>
-          </div>
-
-          <div className="mb-4">
-            <label className={labelClass}>{t("settings.apiKey")}</label>
-            {hasStoredApiKey && !settings.apiKey && (
-              <div className="mb-2 inline-flex items-center gap-1.5 rounded-lg border border-ok/20 bg-ok-soft px-2 py-1 text-[11px] text-ok">
-                <CheckCircle2 className="w-3 h-3" />
-                API key saved
-              </div>
-            )}
-            <div className="relative">
-              <input
-                type={showKey ? "text" : "password"}
-                value={settings.apiKey}
-                onChange={(e) => setSettings({ ...settings, apiKey: e.target.value })}
-                placeholder={hasStoredApiKey ? "Leave blank to keep saved key" : "sk-cp-..."}
-                className={inputClass}
-              />
-              <button
-                onClick={() => setShowKey(!showKey)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-2 hover:text-ink text-xs transition-colors"
-              >
-                {showKey ? t("settings.hide") : t("settings.show")}
-              </button>
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <label className={labelClass}>{t("settings.keyType")}</label>
-            <select
-              value={settings.apiKeyType}
-              onChange={(e) => setSettings({ ...settings, apiKeyType: e.target.value as AppSettings["apiKeyType"] })}
-              className={selectClass}
-            >
-              <option value="pay_as_you_go">Pay-as-you-go</option>
-              <option value="token_plan">Token Plan</option>
-            </select>
-          </div>
-
-          <div className="mb-4">
-            <label className={labelClass}>{t("settings.baseUrl")}</label>
-            <div className="flex items-center gap-2">
-              <Globe className="w-4 h-4 text-ink-2 flex-shrink-0" strokeWidth={1.5} />
-              <input
-                type="text"
-                value={settings.baseUrl}
-                onChange={(e) => setSettings({ ...settings, baseUrl: e.target.value })}
-                className="flex-1 px-3 py-2.5 rounded-xl bg-card-hi border border-line text-ink text-sm focus:border-accent/50 transition-all"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className={labelClass}>{t("settings.providerMode")}</label>
-            <select
-              value={settings.providerMode}
-              onChange={(e) => setSettings({ ...settings, providerMode: e.target.value as AppSettings["providerMode"] })}
-              className={selectClass}
-            >
-              <option value="official-text-v2">Official MiniMax (chatcompletion_v2)</option>
-              <option value="openai-compatible">OpenAI Compatible</option>
-              <option value="anthropic-compatible">Anthropic Compatible</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Models */}
         <div className={sectionClass}>
           <div className="flex items-center gap-2 mb-4">
             <Cpu className="w-4 h-4 text-accent" strokeWidth={1.5} />
-            <h2 className="text-sm font-semibold text-ink">{t("settings.models")}</h2>
+            <h2 className="text-sm font-semibold text-ink">{t("settings.defaults")}</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[
-              { label: t("settings.textModel"), key: "textModel" as const },
-              { label: t("settings.fastTextModel"), key: "textModelFast" as const },
-              { label: t("settings.imageModel"), key: "imageModel" as const },
-              { label: t("settings.musicModel"), key: "musicModel" as const },
-            ].map(({ label, key }) => (
-              <div key={key}>
-                <label className={labelClass}>{label}</label>
-                <input
-                  type="text"
-                  value={settings[key]}
-                  onChange={(e) => setSettings({ ...settings, [key]: e.target.value })}
-                  className={inputClass}
-                />
-              </div>
-            ))}
-            <div>
-              <label className={labelClass}>{t("settings.videoModel")}</label>
-              <input
-                type="text"
-                value={settings.videoModel}
-                onChange={(e) => setSettings({ ...settings, videoModel: e.target.value })}
-                placeholder={t("settings.notConfigured")}
-                className={inputClass}
-              />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {capabilities.map((capability) => {
+              const eligibleProviders = providers.filter((provider) => provider.capabilities.includes(capability));
+              const selected = settings.defaults[capability];
+              return (
+                <div key={capability} className="rounded-xl border border-line bg-card-hi p-4">
+                  <label className={labelClass}>{capabilityLabel(capability)}</label>
+                  <select
+                    value={selected.providerId}
+                    onChange={(event) => updateDefault(capability, event.target.value)}
+                    className={selectClass}
+                  >
+                    {eligibleProviders.map((provider) => (
+                      <option key={provider.id} value={provider.id}>
+                        {provider.name}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    value={selected.model}
+                    onChange={(event) => updateDefault(capability, selected.providerId, event.target.value)}
+                    placeholder={t("settings.notConfigured")}
+                    className={`${inputClass} mt-2`}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Connection Test */}
-        <div className={sectionClass}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Radio className="w-4 h-4 text-accent" strokeWidth={1.5} />
-              <h2 className="text-sm font-semibold text-ink">{t("settings.connectionTest")}</h2>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleRefreshModels}
-                disabled={refreshing}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-hover border border-line text-ink-2 text-xs hover:bg-line hover:text-ink transition-all disabled:opacity-50"
-              >
-                <RefreshCw className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`} />
-                {t("settings.refreshModels")}
-              </button>
-              <button
-                onClick={handleTestConnection}
-                disabled={testing}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg btn-brand text-xs font-medium transition-all disabled:opacity-50"
-              >
-                {testing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                {t("settings.testConnection")}
-              </button>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          {providers.map((provider) => {
+            const config = settings.providers[provider.id];
+            const result = testResults[provider.id];
+            const isTesting = testing[provider.id];
+            const hasKey = Boolean(config?.hasApiKey) || Boolean(config?.apiKey?.trim());
+            const showKey = Boolean(showKeys[provider.id]);
 
-          {testResult && (
-            <div
-              className={`p-3 rounded-xl ${
-                testResult.ok
-                  ? "bg-ok-soft border border-ok/20"
-                  : "bg-danger-soft border border-danger/20"
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                {testResult.ok
-                  ? <CheckCircle2 className="w-4 h-4 text-ok" />
-                  : <XCircle className="w-4 h-4 text-danger" />}
-                <span className={`text-sm font-medium ${testResult.ok ? "text-ok" : "text-danger"}`}>
-                  {testResult.ok ? t("settings.connectionSuccess") : t("settings.connectionFailed")}
-                </span>
-              </div>
-              {testResult.error && (
-                <p className="text-xs text-danger/80 mt-1">{testResult.error}</p>
-              )}
-              {testResult.models.length > 0 && (
-                <div className="mt-2">
-                  <p className="text-xs text-ink-2 mb-1">{t("settings.availableModels")} ({testResult.models.length}):</p>
-                  <div className="flex flex-wrap gap-1">
-                    {testResult.models.map((m) => (
-                      <span key={m} className="px-2 py-0.5 rounded bg-hover text-xs text-ink-2">{m}</span>
+            return (
+              <section key={provider.id} className="rounded-2xl bg-card border border-line p-5">
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Plug className="w-4 h-4 text-accent" strokeWidth={1.5} />
+                      <h2 className="text-sm font-semibold text-ink">{provider.name}</h2>
+                      {hasKey && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-ok-soft px-2 py-0.5 text-[10px] text-ok">
+                          <CheckCircle2 className="w-3 h-3" />
+                          key saved
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs leading-relaxed text-ink-2">{provider.description}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => updateProvider(provider.id, { enabled: !config?.enabled })}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${
+                      config?.enabled ? "bg-accent" : "bg-line-hi"
+                    }`}
+                    aria-label={`Toggle ${provider.name}`}
+                  >
+                    <span
+                      className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-transform ${
+                        config?.enabled ? "left-6" : "left-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className={labelClass}>{t("settings.apiKey")}</label>
+                    <div className="relative">
+                      <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-3" />
+                      <input
+                        type={showKey ? "text" : "password"}
+                        value={config?.apiKey ?? ""}
+                        onChange={(event) => updateProvider(provider.id, { apiKey: event.target.value })}
+                        placeholder={hasKey ? "Leave blank to keep saved key" : provider.authHeader}
+                        className={`${inputClass} pl-9 pr-14`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowKeys((current) => ({ ...current, [provider.id]: !showKey }))}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-2 hover:text-ink"
+                      >
+                        {showKey ? t("settings.hide") : t("settings.show")}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>{t("settings.baseUrl")}</label>
+                    <div className="relative">
+                      <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-3" />
+                      <input
+                        value={config?.baseUrl ?? provider.defaultBaseUrl}
+                        onChange={(event) => updateProvider(provider.id, { baseUrl: event.target.value })}
+                        className={`${inputClass} pl-9`}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {provider.capabilities.map((capability) => (
+                      <div key={capability}>
+                        <label className={labelClass}>{capabilityLabel(capability)} model</label>
+                        <input
+                          value={config?.models?.[capability] ?? ""}
+                          onChange={(event) =>
+                            updateProvider(provider.id, {
+                              models: { [capability]: event.target.value },
+                            })
+                          }
+                          placeholder={provider.defaultModels[capability] || t("settings.notConfigured")}
+                          className={inputClass}
+                        />
+                      </div>
                     ))}
                   </div>
+
+                  {provider.id === "elevenlabs" && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelClass}>Voice ID</label>
+                        <input
+                          value={config?.extra?.voiceId ?? ""}
+                          onChange={(event) => updateProvider(provider.id, { extra: { voiceId: event.target.value } })}
+                          className={inputClass}
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>Output format</label>
+                        <input
+                          value={config?.extra?.outputFormat ?? ""}
+                          onChange={(event) => updateProvider(provider.id, { extra: { outputFormat: event.target.value } })}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between gap-3 pt-1">
+                    <a
+                      href={provider.docsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-ink-2 hover:text-ink"
+                    >
+                      Docs
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => testProvider(provider.id)}
+                      disabled={isTesting}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg btn-brand text-xs font-medium transition-all disabled:opacity-50"
+                    >
+                      {isTesting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Radio className="w-3.5 h-3.5" />}
+                      {t("settings.testConnection")}
+                    </button>
+                  </div>
+
+                  {result && (
+                    <div
+                      className={`p-3 rounded-xl ${
+                        result.ok ? "bg-ok-soft border border-ok/20" : "bg-danger-soft border border-danger/20"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {result.ok ? <CheckCircle2 className="w-4 h-4 text-ok" /> : <XCircle className="w-4 h-4 text-danger" />}
+                        <span className={`text-sm font-medium ${result.ok ? "text-ok" : "text-danger"}`}>
+                          {result.ok ? t("settings.connectionSuccess") : t("settings.connectionFailed")}
+                        </span>
+                      </div>
+                      {result.error && <p className="mt-1 text-xs text-danger/80">{result.error}</p>}
+                      {result.models.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {result.models.slice(0, 12).map((model) => (
+                            <span key={model} className="px-2 py-0.5 rounded bg-hover text-xs text-ink-2">
+                              {model}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              )}
+              </section>
+            );
+          })}
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4">
+          <div className={sectionClass}>
+            <div className="flex items-center gap-2 mb-3">
+              <Settings2 className="w-4 h-4 text-accent" strokeWidth={1.5} />
+              <h2 className="text-sm font-semibold text-ink">{t("settings.options")}</h2>
             </div>
-          )}
-        </div>
-
-        {/* Options */}
-        <div className={sectionClass}>
-          <h2 className="text-sm font-semibold text-ink mb-3">{t("settings.options")}</h2>
-          <div className="space-y-3">
-            {[
-              { titleKey: "settings.demoMode", descKey: "settings.demoModeDesc", key: "demoMode" as const },
-              { titleKey: "settings.debugMode", descKey: "settings.debugModeDesc", key: "debugMode" as const },
-            ].map(({ titleKey, descKey, key }) => (
-              <label key={key} className="flex items-center justify-between cursor-pointer">
-                <div>
-                  <p className="text-sm text-ink">{t(titleKey)}</p>
-                  <p className="text-xs text-ink-2">{t(descKey)}</p>
-                </div>
-                <button
-                  onClick={() => setSettings({ ...settings, [key]: !settings[key] })}
-                  className={`relative w-10 h-5 rounded-full transition-colors ${
-                    settings[key] ? "bg-accent" : "bg-line-hi"
-                  }`}
-                >
-                  <div
-                    className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-transform ${
-                      settings[key] ? "left-6" : "left-1"
+            <div className="space-y-3">
+              {[
+                { titleKey: "settings.demoMode", descKey: "settings.demoModeDesc", key: "demoMode" as const },
+                { titleKey: "settings.debugMode", descKey: "settings.debugModeDesc", key: "debugMode" as const },
+              ].map(({ titleKey, descKey, key }) => (
+                <label key={key} className="flex items-center justify-between cursor-pointer">
+                  <div>
+                    <p className="text-sm text-ink">{t(titleKey)}</p>
+                    <p className="text-xs text-ink-2">{t(descKey)}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSettings((current) => ({ ...current, [key]: !current[key] }))}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${
+                      settings[key] ? "bg-accent" : "bg-line-hi"
                     }`}
-                  />
-                </button>
-              </label>
-            ))}
+                  >
+                    <span
+                      className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-transform ${
+                        settings[key] ? "left-6" : "left-1"
+                      }`}
+                    />
+                  </button>
+                </label>
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex lg:flex-col items-center justify-between gap-2">
             <button
               onClick={handleClearAssets}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-danger-soft border border-danger/20 text-danger text-xs hover:bg-danger/20 transition-all"
@@ -407,17 +505,18 @@ export default function SettingsPage() {
               onClick={handleResetSettings}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-hover border border-line text-ink-2 text-xs hover:bg-line hover:text-ink transition-all"
             >
+              <RefreshCw className="w-3.5 h-3.5" />
               {t("settings.resetSettings")}
             </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl btn-brand text-sm font-medium transition-all disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {t("settings.saveSettings")}
+            </button>
           </div>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl btn-brand text-sm font-medium transition-all disabled:opacity-50"
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-            {t("settings.saveSettings")}
-          </button>
         </div>
       </div>
     </main>

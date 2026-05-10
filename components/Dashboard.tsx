@@ -23,10 +23,10 @@ interface PipelineData {
 type LoadingStep = "briefing" | "script" | "thumbnail" | "music" | "checklist";
 
 const LOADING_STEPS: { key: LoadingStep; label: string }[] = [
-  { key: "briefing", label: "Analizando briefing con MiniMax M2.7..." },
+  { key: "briefing", label: "Analizando briefing con el proveedor de texto configurado..." },
   { key: "script", label: "Generando guion..." },
-  { key: "thumbnail", label: "Generando imagen con MiniMax Image..." },
-  { key: "music", label: "Generando música con MiniMax Music..." },
+  { key: "thumbnail", label: "Generando imagen con configured image provider..." },
+  { key: "music", label: "Generando música con configured music provider..." },
   { key: "checklist", label: "Verificando checklist..." },
 ];
 
@@ -84,7 +84,7 @@ export function Dashboard() {
             </span>
           </h1>
           <p className="mt-2 text-sm text-neutral-400 max-w-lg mx-auto">
-            Convierte un briefing en guion, thumbnail y vinheta usando MiniMax M2.7
+            Convierte un briefing en guion, thumbnail y vinheta usando tus proveedores configurados
           </p>
         </div>
 
@@ -308,14 +308,14 @@ export function Dashboard() {
                           <svg className="mx-auto h-10 w-10 text-neutral-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
                           </svg>
-                          <p className="text-xs text-neutral-500">MiniMax Image preview</p>
+                          <p className="text-xs text-neutral-500">configured image provider preview</p>
                         </div>
                       )}
 
                       {/* Final prompt */}
                       {parsedData.thumbnail_final_prompt && (
                         <div className="mt-4 rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1">Prompt final enviado a MiniMax Image</p>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1">Prompt final enviado a configured image provider</p>
                           <p className="text-xs text-neutral-400 line-clamp-3">{parsedData.thumbnail_final_prompt}</p>
                         </div>
                       )}
@@ -350,7 +350,7 @@ export function Dashboard() {
                           <svg className="mx-auto h-10 w-10 text-neutral-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 11-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66A2.25 2.25 0 009 15.553z" />
                           </svg>
-                          <p className="text-xs text-neutral-500">MiniMax Music preview</p>
+                          <p className="text-xs text-neutral-500">configured music provider preview</p>
                         </div>
                       )}
                     </ResultCard>

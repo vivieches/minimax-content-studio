@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateText } from "@/lib/minimax/text";
+import { generateTextWithProvider } from "@/lib/providers/generation";
 import { buildYoutubeThumbnailPrompt, buildThumbnailPromptGenerationPrompt, type ThumbnailInput } from "@/lib/prompts/thumbnailPrompt";
 import { thumbnailGenerateSchema, thumbnailInputSchema, validateOr400 } from "@/lib/validation/schemas";
 import { withRateLimitHeaders, validatePayloadSize, PAYLOAD_LIMITS } from "@/lib/security/rateLimit";
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
       // Run through LLM to produce a concise, image-model-optimized visual prompt
       const hasFaceRef = input.hasReferenceFace;
-      const prompt = await generateText({
+      const promptResult = await generateTextWithProvider({
         systemPrompt:
           "You are an expert image generation prompt engineer for YouTube thumbnails with millions of views. " +
           "Given thumbnail specs, write ONE image generation prompt under 200 words. " +
@@ -36,10 +36,10 @@ export async function POST(request: Request) {
           "7. STYLE: professional studio lighting, sharp focus on eyes, looks like MrBeast or top tech-channel thumbnail.\n" +
           (hasFaceRef ? "8. FACE: face from reference image — same likeness, new pose and expression.\n" : "") +
           "Write only the visual description. No JSON, no headers, no explanations.",
-        userMessage: instructions,
+        prompt: instructions,
       });
 
-      return withRateLimitHeaders(NextResponse.json({ prompt }));
+      return withRateLimitHeaders(NextResponse.json({ prompt: promptResult.content }));
     }
 
     // Legacy format (has 'theme' field)
@@ -51,12 +51,12 @@ export async function POST(request: Request) {
     const { theme, title, style, text, language } = legacyValidation.data;
     const prompt = buildThumbnailPromptGenerationPrompt({ theme, title, style, text, language });
 
-    const content = await generateText({
+    const content = await generateTextWithProvider({
       systemPrompt: "You are a thumbnail prompt engineer. Generate a detailed, professional visual prompt for a YouTube thumbnail. Return only the prompt text, no JSON or explanations.",
-      userMessage: prompt,
+      prompt,
     });
 
-    return withRateLimitHeaders(NextResponse.json({ prompt: content }));
+    return withRateLimitHeaders(NextResponse.json({ prompt: content.content }));
   } catch (error) {
     console.error("Thumbnail prompt error:", error);
     return NextResponse.json(

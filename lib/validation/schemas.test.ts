@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   settingsSchema,
   assetSchema,
-  exportSchema,
   scriptGenerateSchema,
   thumbnailGenerateSchema,
   validateOr400,

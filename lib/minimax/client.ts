@@ -93,9 +93,9 @@ export function isDemoMode(): boolean {
 export async function isEffectiveDemoMode(): Promise<boolean> {
   if (isDemoMode()) return true;
   try {
-    const { readDb } = await import("@/lib/storage/db");
-    const file = await readDb<{ demoMode?: boolean }>("settings.json", {});
-    return file.demoMode === true;
+    const { getSettings } = await import("@/lib/storage/settings");
+    const settings = await getSettings();
+    return settings.demoMode === true;
   } catch {
     return false;
   }

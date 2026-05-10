@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("MiniMax Dashboard - Smoke Tests", () => {
   test("All pages load correctly", async ({ page }) => {
     await page.goto("/");
-    await expect(page).toHaveTitle(/MiniMax Studio/);
+    await expect(page).toHaveTitle(/Open Studio/);
     
     await page.goto("/scripts");
     await expect(page).toHaveTitle(/Script Generator/);

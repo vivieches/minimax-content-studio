@@ -1,8 +1,54 @@
 import { z } from "zod";
 
+const capabilitySchema = z.enum(["text", "image", "audio", "video"]);
+const providerIdSchema = z.string().min(1).max(100);
+const capabilityModelMapSchema = z.object({
+  text: z.string().max(200).optional(),
+  image: z.string().max(200).optional(),
+  audio: z.string().max(200).optional(),
+  video: z.string().max(200).optional(),
+});
+const providerOverrideSchema = z.object({
+  providerId: providerIdSchema.optional(),
+  model: z.string().max(200).optional(),
+});
+
+const providerStoredConfigSchema = z.object({
+  enabled: z.boolean().optional(),
+  apiKey: z.string().max(1000).optional(),
+  baseUrl: z.string().url().max(500).optional(),
+  models: capabilityModelMapSchema.optional(),
+  customHeaders: z.record(z.string().max(100), z.string().max(500)).optional(),
+  extra: z.record(z.string().max(100), z.string().max(500)).optional(),
+  updatedAt: z.string().max(100).optional(),
+});
+
+const providerDefaultsSchema = z.object({
+  text: z.object({
+    providerId: providerIdSchema,
+    model: z.string().max(200),
+  }).optional(),
+  image: z.object({
+    providerId: providerIdSchema,
+    model: z.string().max(200),
+  }).optional(),
+  audio: z.object({
+    providerId: providerIdSchema,
+    model: z.string().max(200),
+  }).optional(),
+  video: z.object({
+    providerId: providerIdSchema,
+    model: z.string().max(200),
+  }).optional(),
+});
+
 // ── Settings ──────────────────────────────────────────────────────────
 export const settingsSchema = z.object({
   action: z.enum(["reset", "clear_assets"]).optional(),
+  providers: z.record(providerIdSchema, providerStoredConfigSchema).optional(),
+  defaults: providerDefaultsSchema.optional(),
+  language: z.enum(["en", "pt", "es"]).optional(),
+  // Legacy MiniMax settings are accepted for backward-compatible writes/tests.
   apiKey: z.string().max(500).optional(),
   apiKeyType: z.enum(["pay_as_you_go", "token_plan"]).optional(),
   baseUrl: z.string().url().max(500).optional(),
@@ -103,6 +149,37 @@ export const videoGenerateSchema = z.object({
   prompt: z.string().min(1).max(2000),
   imageUrl: z.string().url().max(2000).optional(),
   duration: z.number().min(1).max(60).optional(),
+  saveToAssets: z.boolean().optional().default(true),
+  provider: providerOverrideSchema.optional(),
+});
+
+// ── Provider-agnostic Generation ─────────────────────────────────────
+export const textProviderGenerateSchema = z.object({
+  prompt: z.string().min(1).max(4000),
+  systemPrompt: z.string().max(4000).optional(),
+  maxTokens: z.number().int().min(1).max(32000).optional(),
+  temperature: z.number().min(0).max(2).optional(),
+  provider: providerOverrideSchema.optional(),
+});
+
+export const imageProviderGenerateSchema = imageGenerateSchema.extend({
+  provider: providerOverrideSchema.optional(),
+});
+
+export const audioProviderGenerateSchema = musicGenerateSchema.extend({
+  provider: providerOverrideSchema.optional(),
+  voiceId: z.string().max(200).optional(),
+});
+
+export const packageGenerateSchema = z.object({
+  briefing: z.string().min(1).max(4000),
+  steps: z.array(capabilitySchema).max(4).optional(),
+  providers: z.object({
+    text: providerOverrideSchema.optional(),
+    image: providerOverrideSchema.optional(),
+    audio: providerOverrideSchema.optional(),
+    video: providerOverrideSchema.optional(),
+  }).optional(),
   saveToAssets: z.boolean().optional().default(true),
 });
 

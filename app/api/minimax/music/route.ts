@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateMusic } from "@/lib/minimax/music";
+import { generateAudioWithProvider } from "@/lib/providers/generation";
 import { createAsset } from "@/lib/storage/assets";
 import { musicGenerateSchema, validateOr400 } from "@/lib/validation/schemas";
 import { withRateLimitHeaders, validatePayloadSize, PAYLOAD_LIMITS } from "@/lib/security/rateLimit";
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
 
     const { prompt, isInstrumental, sampleRate, bitrate, format, saveToAssets = true } = validation.data;
 
-    const result = await generateMusic({
+    const result = await generateAudioWithProvider({
       prompt,
       isInstrumental,
       sampleRate,
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
           title: `Music - ${prompt.slice(0, 60)}`,
           description: prompt,
           filePath: result.audioUrl,
-          metadata: { audioUrl: result.audioUrl, prompt, isInstrumental },
+          metadata: { audioUrl: result.audioUrl, prompt, isInstrumental, providerId: result.providerId, model: result.model },
           sourceModule: "music-generator",
         });
       } catch {

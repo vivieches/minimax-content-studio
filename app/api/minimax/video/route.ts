@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateVideo } from "@/lib/minimax/video";
+import { generateVideoWithProvider } from "@/lib/providers/generation";
 import { createAsset } from "@/lib/storage/assets";
 import { videoGenerateSchema, validateOr400 } from "@/lib/validation/schemas";
 import { withRateLimitHeaders, validatePayloadSize, PAYLOAD_LIMITS } from "@/lib/security/rateLimit";
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     }
 
     const { prompt, imageUrl, duration, saveToAssets = true } = validation.data;
-    const result = await generateVideo({ prompt, imageUrl, duration });
+    const result = await generateVideoWithProvider({ prompt, imageUrl, duration });
 
     if (saveToAssets && result.status === "completed") {
       try {
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
           type: "video",
           title: `Video - ${prompt.slice(0, 60)}`,
           description: prompt,
-          metadata: { prompt, jobId: result.jobId },
+          metadata: { prompt, jobId: result.jobId, providerId: result.providerId, model: result.model },
           sourceModule: "video-generator",
         });
       } catch {

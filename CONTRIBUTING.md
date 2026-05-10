@@ -1,4 +1,4 @@
-# Contributing to MiniMax Content Studio
+# Contributing to Open Studio
 
 Thanks for wanting to contribute. This is an early-stage open-source project and all help is welcome.
 

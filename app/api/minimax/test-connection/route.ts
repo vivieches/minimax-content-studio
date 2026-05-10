@@ -5,7 +5,7 @@ import { getSettings } from "@/lib/storage/settings";
 export async function GET() {
   try {
     const settings = await getSettings();
-    if (!settings.apiKey) {
+    if (!settings.providers.minimax?.apiKey) {
       return NextResponse.json({
         ok: false,
         models: [],

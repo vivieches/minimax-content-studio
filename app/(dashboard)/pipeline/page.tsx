@@ -25,7 +25,6 @@ export default function PipelineBuilderPage() {
     music: "pending", video: "pending", export: "pending",
   });
   const [enabledSteps, setEnabledSteps] = useState<string[]>(["script", "thumbnail", "music", "export"]);
-  const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState("");
   const [outputFormat, setOutputFormat] = useState<"package" | "individual">("package");
 
@@ -37,7 +36,6 @@ export default function PipelineBuilderPage() {
 
   function resetPipeline() {
     setNodeStatuses({ briefing: "pending", script: "pending", thumbnail: "pending", music: "pending", video: "pending", export: "pending" });
-    setResult(null);
     setError("");
     setCurrentStep("");
   }
@@ -52,65 +50,39 @@ export default function PipelineBuilderPage() {
     try {
       setNodeStatuses((prev) => ({ ...prev, briefing: "completed" }));
 
-      for (const step of enabledSteps) {
+      const activeSteps = enabledSteps.filter((step) => step !== "export");
+      for (const step of activeSteps) {
         setCurrentStep(step);
         setNodeStatuses((prev) => ({ ...prev, [step]: "running" }));
+      }
 
-        if (step === "script") {
-          const res = await fetch("/api/minimax/script", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ briefing: `PIPELINE BRIEFING: ${briefing}\nCreate a complete video script.`, saveToAssets: false }),
-          });
-          if (!res.ok) throw new Error("Script generation failed");
-          const scriptData = await res.json();
-          setResult((prev) => ({ ...prev, [step]: scriptData }));
-        } else if (step === "thumbnail") {
-          const res = await fetch("/api/minimax/thumbnail-prompt", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ theme: briefing, title: "Pipeline Thumbnail", style: "Modern Tech", text: "New Video" }),
-          });
-          if (!res.ok) throw new Error("Thumbnail prompt generation failed");
-          const tpData = await res.json();
-          setResult((prev) => ({ ...prev, [step]: tpData }));
-        } else if (step === "music") {
-          const res = await fetch("/api/minimax/music", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt: `Short instrumental intro music, 10 seconds, modern tech style, energetic, no vocals`, saveToAssets: false }),
-          });
-          if (!res.ok) throw new Error("Music generation failed");
-          const musicData = await res.json();
-          setResult((prev) => ({ ...prev, [step]: musicData }));
-        } else if (step === "video") {
-          const res = await fetch("/api/minimax/video", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt: briefing, saveToAssets: false }),
-          });
-          const videoData = await res.json();
-          setResult((prev) => ({ ...prev, [step]: videoData }));
-          if (!res.ok) { setNodeStatuses((prev) => ({ ...prev, [step]: "completed" })); continue; }
-        } else if (step === "export") {
-          const res = await fetch("/api/exports", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              title: `Pipeline - ${briefing.slice(0, 60)}`,
-              type: "package",
-              status: "completed",
-              files: [],
-              progress: 100,
-              format: outputFormat,
-              metadata: { briefing, outputFormat, pipelineResult: result },
-            }),
-          });
-          const exportData = await res.json();
-          setResult((prev) => ({ ...prev, [step]: exportData }));
-        }
+      const providerSteps = Array.from(new Set([
+        enabledSteps.includes("script") ? "text" : null,
+        enabledSteps.includes("thumbnail") ? "image" : null,
+        enabledSteps.includes("music") ? "audio" : null,
+        enabledSteps.includes("video") ? "video" : null,
+      ].filter(Boolean)));
 
+      const res = await fetch("/api/generate/package", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          briefing,
+          steps: providerSteps,
+          saveToAssets: true,
+        }),
+      });
+      const packageData = await res.json();
+      if (!res.ok || !packageData.ok) {
+        throw new Error(packageData.details || packageData.error || "Pipeline generation failed");
+      }
+
+      for (const step of activeSteps) {
         setNodeStatuses((prev) => ({ ...prev, [step]: "completed" }));
+      }
+      if (enabledSteps.includes("export")) {
+        setCurrentStep("export");
+        setNodeStatuses((prev) => ({ ...prev, export: "completed" }));
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Pipeline failed");

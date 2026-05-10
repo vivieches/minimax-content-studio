@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateImage } from "@/lib/minimax/image";
+import { generateImageWithProvider } from "@/lib/providers/generation";
 import { createAsset } from "@/lib/storage/assets";
 import { imageGenerateSchema, validateOr400 } from "@/lib/validation/schemas";
 import { withRateLimitHeaders, validatePayloadSize, PAYLOAD_LIMITS } from "@/lib/security/rateLimit";
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     console.log("[API] Reference image:", referenceImage ? `${referenceImage.slice(0, 60)}...` : "none");
     console.log("[API] Reference type:", referenceType || "none");
 
-    const result = await generateImage({
+    const result = await generateImageWithProvider({
       prompt,
       aspectRatio,
       n,
@@ -43,6 +43,8 @@ export async function POST(request: Request) {
             variations: n,
             hasReference: !!referenceImage,
             referenceType,
+            providerId: result.providerId,
+            model: result.model,
             generatedAt: new Date().toISOString(),
           },
           sourceModule: "thumbnail-generator",
