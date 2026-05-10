@@ -38,18 +38,19 @@ function envOrFile(envValue: string | undefined, fileValue: string | undefined, 
  */
 export async function getResolvedConfig(): Promise<MiniMaxConfig> {
   try {
-    const { readDb } = await import("@/lib/storage/db");
-    const file = await readDb<Partial<MiniMaxConfig & { demoMode?: boolean }>>("settings.json", {});
+    const { getSettings } = await import("@/lib/storage/settings");
+    const settings = await getSettings();
+    const minimax = settings.providers.minimax;
     return {
-      apiKey: envOrFile(process.env.MINIMAX_API_KEY, file.apiKey, ""),
-      apiKeyType: (process.env.MINIMAX_API_KEY_TYPE as ApiKeyType | undefined) ?? file.apiKeyType ?? "pay_as_you_go",
-      baseUrl: envOrFile(process.env.MINIMAX_BASE_URL, file.baseUrl, "https://api.minimax.io"),
-      textModel: envOrFile(process.env.MINIMAX_TEXT_MODEL, file.textModel, "MiniMax-M2.7"),
-      textModelFast: envOrFile(process.env.MINIMAX_TEXT_MODEL_FAST, file.textModelFast, "MiniMax-M2.7-highspeed"),
-      imageModel: envOrFile(process.env.MINIMAX_IMAGE_MODEL, file.imageModel, "image-01"),
-      musicModel: envOrFile(process.env.MINIMAX_MUSIC_MODEL, file.musicModel, "music-2.6"),
-      videoModel: envOrFile(process.env.MINIMAX_VIDEO_MODEL, file.videoModel, ""),
-      providerMode: (process.env.MINIMAX_PROVIDER_MODE as ProviderMode | undefined) ?? file.providerMode ?? "official-text-v2",
+      apiKey: envOrFile(process.env.MINIMAX_API_KEY, minimax?.apiKey, ""),
+      apiKeyType: (process.env.MINIMAX_API_KEY_TYPE as ApiKeyType | undefined) ?? "pay_as_you_go",
+      baseUrl: envOrFile(process.env.MINIMAX_BASE_URL, minimax?.baseUrl, "https://api.minimax.io"),
+      textModel: envOrFile(process.env.MINIMAX_TEXT_MODEL, minimax?.models.text, "MiniMax-M2.7"),
+      textModelFast: envOrFile(process.env.MINIMAX_TEXT_MODEL_FAST, minimax?.models.text, "MiniMax-M2.7-highspeed"),
+      imageModel: envOrFile(process.env.MINIMAX_IMAGE_MODEL, minimax?.models.image, "image-01"),
+      musicModel: envOrFile(process.env.MINIMAX_MUSIC_MODEL, minimax?.models.audio, "music-2.6"),
+      videoModel: envOrFile(process.env.MINIMAX_VIDEO_MODEL, minimax?.models.video, ""),
+      providerMode: (process.env.MINIMAX_PROVIDER_MODE as ProviderMode | undefined) ?? "official-text-v2",
     };
   } catch {
     return getMiniMaxConfig();

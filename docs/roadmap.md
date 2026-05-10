@@ -1,14 +1,14 @@
 # Roadmap
 
-MiniMax Content Studio is an early-preview project. This roadmap reflects current plans — priorities may shift based on community feedback and MiniMax API availability.
+Open Studio is an early-preview project. This roadmap reflects current plans — priorities may shift based on community feedback and MiniMax API availability.
 
 ---
 
 ## Phase 1 — Public open-source release ✅
 
-- [x] Script Generator (MiniMax M2.7)
-- [x] Thumbnail Generator (MiniMax Image)
-- [x] Music Generator (MiniMax Music)
+- [x] Script Generator (configured text provider)
+- [x] Thumbnail Generator (configured image provider)
+- [x] Music Generator (configured music provider)
 - [x] Pipeline Builder (multi-step workflows)
 - [x] Assets Library
 - [x] Exports Manager

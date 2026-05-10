@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   DESIGN TOKENS — MiniMax Studio
+   DESIGN TOKENS — Open Studio
    Semantic tokens map to CSS custom properties via @theme inline,
    enabling runtime light/dark switching without JS class toggling.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */

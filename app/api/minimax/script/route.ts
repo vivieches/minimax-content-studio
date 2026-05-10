@@ -1,9 +1,31 @@
 import { NextResponse } from "next/server";
-import { generateScript } from "@/lib/minimax/text";
+import { generateTextWithProvider } from "@/lib/providers/generation";
 import { createAsset } from "@/lib/storage/assets";
 import { saveContentFile } from "@/lib/minimax/files";
 import { scriptGenerateSchema, validateOr400 } from "@/lib/validation/schemas";
 import { withRateLimitHeaders, validatePayloadSize, PAYLOAD_LIMITS } from "@/lib/security/rateLimit";
+
+function parseScriptResponse(content: string): Record<string, unknown> {
+  const jsonStart = content.indexOf("{");
+  const jsonEnd = content.lastIndexOf("}");
+  const jsonStr = jsonStart >= 0 && jsonEnd >= jsonStart ? content.slice(jsonStart, jsonEnd + 1) : content;
+
+  try {
+    const parsed = JSON.parse(jsonStr);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {
+      detected_requirements: [],
+      script: content,
+      thumbnail_prompt: "",
+      thumbnail_text: "",
+      music_prompt: "",
+      compliance_check: [],
+      missing_requirements: [],
+      assumptions: ["The provider returned plain text instead of JSON."],
+    };
+  }
+}
 
 export async function POST(request: Request) {
   const sizeError = validatePayloadSize(request, PAYLOAD_LIMITS.briefing);
@@ -17,7 +39,18 @@ export async function POST(request: Request) {
     }
 
     const { briefing, saveToAssets = true } = validation.data;
-    const result = await generateScript(briefing);
+    const { systemPrompt } = await import("@/prompts/content-agent-prompt");
+    const textResult = await generateTextWithProvider({
+      systemPrompt,
+      prompt: briefing,
+      maxTokens: 4096,
+      temperature: 0.7,
+    });
+    const result: Record<string, unknown> = {
+      ...parseScriptResponse(textResult.content),
+      providerId: textResult.providerId,
+      model: textResult.model,
+    };
 
     if (saveToAssets && result.script) {
       try {

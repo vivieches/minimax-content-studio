@@ -2,7 +2,7 @@
 
 ## This is an early-preview project
 
-MiniMax Content Studio is an experimental open-source dashboard. It is not a production SaaS service. All generation runs locally on your machine using your own API key.
+Open Studio is an experimental open-source dashboard. It is not a production SaaS service. All generation runs locally on your machine using your own API key.
 
 ## API Key Safety
 

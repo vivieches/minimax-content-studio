@@ -1,14 +1,14 @@
 {
-  "name": "MiniMax Studio",
-  "short_name": "MiniMax Studio",
-  "description": "Local-first dashboard for MiniMax content generation.",
+  "name": "Open Studio",
+  "short_name": "Open Studio",
+  "description": "Local-first BYOK creator workspace for AI content generation.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0F1118",
   "theme_color": "#FF4B8B",
   "icons": [
     {
-      "src": "/minimax-logo.svg",
+      "src": "/open-studio-logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"

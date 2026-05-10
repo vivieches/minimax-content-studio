@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to MiniMax Content Studio will be documented here.
+All notable changes to Open Studio will be documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
@@ -24,9 +24,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Initial open-source release.
 
 ### Added
-- Script Generator using MiniMax M2.7
-- Thumbnail Generator using MiniMax Image (image-01)
-- Music Generator using MiniMax Music (music-2.6)
+- Script Generator using the configured text provider
+- Thumbnail Generator using configured image provider (image-01)
+- Music Generator using configured music provider (music-2.6)
 - Pipeline Builder (multi-step: script → thumbnail → music → video)
 - Assets Library (save, filter, search, favorite, download, delete)
 - Exports Manager (download metadata and files)

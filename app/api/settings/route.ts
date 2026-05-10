@@ -2,21 +2,27 @@ import { NextResponse } from "next/server";
 import { getSettings, updateSettings, resetSettings } from "@/lib/storage/settings";
 import { settingsSchema, validateOr400 } from "@/lib/validation/schemas";
 
-// SafeSettings omits apiKey — never returned to the client
-type SafeSettings = Omit<Awaited<ReturnType<typeof getSettings>>, "apiKey"> & {
-  hasApiKey: boolean;
+type Settings = Awaited<ReturnType<typeof getSettings>>;
+type SafeSettings = Omit<Settings, "providers"> & {
+  providers: Record<string, Omit<Settings["providers"][string], "apiKey"> & { hasApiKey: boolean }>;
 };
 
-function stripApiKey(settings: Awaited<ReturnType<typeof getSettings>>): SafeSettings {
-  const { apiKey: _apiKey, ...safe } = settings;
-  return { ...safe, hasApiKey: Boolean(_apiKey) };
+function stripApiKeys(settings: Settings): SafeSettings {
+  const providers = Object.fromEntries(
+    Object.entries(settings.providers).map(([providerId, config]) => {
+      const { apiKey: _apiKey, ...safeConfig } = config;
+      return [providerId, { ...safeConfig, hasApiKey: Boolean(_apiKey) }];
+    })
+  );
+
+  return { ...settings, providers };
 }
 
 export async function GET() {
   try {
     const settings = await getSettings();
-    // Never expose apiKey in GET responses
-    const safeSettings = stripApiKey(settings);
+    // Never expose API keys in GET responses
+    const safeSettings = stripApiKeys(settings);
     return NextResponse.json({ ok: true, settings: safeSettings });
   } catch (error) {
     return NextResponse.json(
@@ -38,7 +44,7 @@ export async function PUT(request: Request) {
 
     if (action === "reset") {
       const result = await resetSettings();
-      return NextResponse.json({ ok: true, settings: stripApiKey(result) });
+      return NextResponse.json({ ok: true, settings: stripApiKeys(result) });
     }
 
     if (action === "clear_assets") {
@@ -47,9 +53,9 @@ export async function PUT(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    const result = await updateSettings(settings);
-    // Never expose apiKey in PUT responses either
-    return NextResponse.json({ ok: true, settings: stripApiKey(result) });
+    const result = await updateSettings(settings as Partial<Awaited<ReturnType<typeof getSettings>>>);
+    // Never expose API keys in PUT responses either
+    return NextResponse.json({ ok: true, settings: stripApiKeys(result) });
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : "Failed to save settings" },

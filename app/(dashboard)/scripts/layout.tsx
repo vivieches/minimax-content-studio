@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Script Generator — MiniMax Studio",
+  title: "Script Generator — Open Studio",
   description: "Generate YouTube scripts with AI-powered briefing, structure, and review steps",
   openGraph: {
-    title: "Script Generator — MiniMax Studio",
+    title: "Script Generator — Open Studio",
     description: "Generate YouTube scripts with AI-powered briefing, structure, and review steps",
     type: "website",
-    siteName: "MiniMax Studio",
+    siteName: "Open Studio",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Script Generator — MiniMax Studio",
+    title: "Script Generator — Open Studio",
     description: "Generate YouTube scripts with AI-powered briefing, structure, and review steps",
   },
 };

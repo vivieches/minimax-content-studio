@@ -15,24 +15,24 @@ export const metadata: Metadata = {
     template: "%s — Open Studio",
   },
   description:
-    "From idea to content. Generate scripts, thumbnails, music and videos with Open Studio.",
+    "From idea to content. Generate scripts, thumbnails, music and videos with your own AI providers.",
   openGraph: {
     type: "website",
     siteName: "Open Studio",
     title: "Open Studio — AI Creative Studio for Modern Creators",
     description:
-      "From idea to content. Generate scripts, thumbnails, music and videos with Open Studio.",
+      "From idea to content. Generate scripts, thumbnails, music and videos with your own AI providers.",
   },
   twitter: {
     card: "summary_large_image",
     creator: "@openstudio_ai",
     title: "Open Studio — AI Creative Studio for Modern Creators",
     description:
-      "From idea to content. Generate scripts, thumbnails, music and videos with Open Studio.",
+      "From idea to content. Generate scripts, thumbnails, music and videos with your own AI providers.",
   },
   icons: {
     icon: "/favicon.ico",
-    apple: "/minimax-logo.svg",
+    apple: "/open-studio-logo.svg",
   },
   manifest: "/site.webmanifest",
 };
