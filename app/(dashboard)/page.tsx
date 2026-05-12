@@ -17,9 +17,11 @@ export default function HomePage() {
           <OpenStudioHero />
           <QuickActions />
 
-          <div className="mt-[28px] grid min-h-0 flex-1 grid-cols-1 gap-[34px] xl:grid-cols-[minmax(0,1.06fr)_minmax(350px,418px)] xl:gap-[44px]">
+          <div className="mt-[28px] grid min-h-0 flex-1 grid-cols-1 items-start gap-[34px] xl:grid-cols-[minmax(0,1.06fr)_minmax(350px,418px)] xl:gap-[44px]">
             <RecentProjects />
-            <ActivityPanel />
+            <div className="xl:mt-[43px]">
+              <ActivityPanel />
+            </div>
           </div>
         </div>
       </div>

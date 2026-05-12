@@ -84,7 +84,7 @@ interface ProviderResponseItem extends ProviderManifest {
 
 type TestResult = { ok: boolean; models: string[]; modelsDetailed?: CatalogModel[]; error?: string; source?: string; stale?: boolean };
 type SectionId = "execution" | "language" | "appearance";
-type ByokTabId = "anthropic" | "openai" | "azure" | "gemini" | "local";
+type ByokTabId = "anthropic" | "openai" | "azure" | "gemini" | "image" | "local";
 
 const LOCAL_SETTINGS_KEY = "open-studio.provider-secrets.v1";
 const DEFAULT_MODEL = "default";
@@ -108,6 +108,7 @@ const byokTabs: Array<{ id: ByokTabId; title: string; providerIds: string[] }> =
   { id: "openai", title: "OpenAI", providerIds: ["openai", "openai-compatible", "openrouter", "groq", "together", "deepseek", "minimax"] },
   { id: "azure", title: "Azure OpenAI", providerIds: ["azure-openai"] },
   { id: "gemini", title: "Google Gemini", providerIds: ["gemini"] },
+  { id: "image", title: "Imagem", providerIds: ["pollinations", "fal", "replicate", "together", "openai", "openai-compatible", "azure-openai", "local-openai", "stub", "minimax"] },
   { id: "local", title: "Local first", providerIds: ["ollama", "lm-studio", "vllm", "local-openai"] },
 ];
 
@@ -181,8 +182,8 @@ function writeProviderSecrets(providers: AppSettings["providers"]) {
   window.localStorage.setItem(LOCAL_SETTINGS_KEY, JSON.stringify(next));
 }
 
-function providerNeedsKey(provider: Pick<ProviderResponseItem, "authHeader"> | undefined) {
-  return provider?.authHeader !== "none";
+function providerNeedsKey(provider: Pick<ProviderResponseItem, "authHeader" | "apiKeyOptional"> | undefined) {
+  return provider?.authHeader !== "none" && provider?.apiKeyOptional !== true;
 }
 
 function hasProviderKey(config: SafeProviderConfig | undefined) {
@@ -346,6 +347,11 @@ export default function SettingsPage() {
   const selectedByokConfig = selectedByokProvider ? providerConfigFor(selectedByokProvider, settings) : undefined;
   const selectedAgent = agents.find((agent) => agent.id === settings.agentId) ?? agents.find((agent) => agent.available) ?? agents[0];
   const selectedAgentChoice = selectedAgent ? settings.agentModels[selectedAgent.id] ?? {} : {};
+
+  function byokCapability(provider: ProviderResponseItem | undefined): ActiveProviderCapability {
+    if (activeByokTab === "image" && provider?.capabilities.includes("image")) return "image";
+    return primaryCapability(provider);
+  }
 
   async function loadAgents(options: { rescan?: boolean; showNotice?: boolean } = {}) {
     setAgentLoading(true);
@@ -616,7 +622,7 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           providerId,
-          capability: provider?.capabilities.includes("text") ? "text" : "image",
+          capability: byokCapability(provider),
           apiKey: providerConfig?.apiKey,
           baseUrl: providerConfig?.baseUrl,
           models: providerConfig?.models,
@@ -627,7 +633,7 @@ export default function SettingsPage() {
       const data = await res.json();
       setTestResults((current) => ({ ...current, [providerId]: data }));
       if (Array.isArray(data.models) && data.models.length && provider) {
-        const capability = primaryCapability(provider);
+        const capability = byokCapability(provider);
         mergeProviderModels(providerId, capability, data.models, data.modelsDetailed);
       }
     } catch {
@@ -650,7 +656,7 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           providerId,
-          capability: provider?.capabilities.includes("text") ? "text" : "image",
+          capability: byokCapability(provider),
           apiKey: providerConfig?.apiKey,
           baseUrl: providerConfig?.baseUrl,
           models: providerConfig?.models,
@@ -666,7 +672,7 @@ export default function SettingsPage() {
           : { ok: false, models: [], error: data.error || "Não consegui buscar modelos." },
       }));
       if (provider && Array.isArray(data.models) && data.models.length) {
-        const capability = primaryCapability(provider);
+        const capability = byokCapability(provider);
         mergeProviderModels(providerId, capability, data.models, data.modelsDetailed);
       }
     } catch {
@@ -717,7 +723,7 @@ export default function SettingsPage() {
   function renderExecutionSection() {
     const provider = selectedByokProvider;
     const config = selectedByokConfig;
-    const modelCapability = primaryCapability(provider);
+    const modelCapability = byokCapability(provider);
     const models = provider ? getModelOptions(provider, modelCapability, config?.models?.[modelCapability]) : [];
     const testResult = provider ? testResults[provider.id] : undefined;
 

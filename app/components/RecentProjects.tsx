@@ -4,15 +4,16 @@ import Link from "next/link";
 import { MoreHorizontal } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { AssetRecord } from "@/lib/minimax/types";
+import { useT } from "@/lib/i18n";
 
-function relativeTime(value: string) {
+function relativeTime(value: string, nowLabel: string) {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Reciente";
+  if (Number.isNaN(date.getTime())) return nowLabel;
   const diff = Date.now() - date.getTime();
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
-  if (minutes < 60) return "Agora";
+  if (minutes < 60) return nowLabel;
   if (hours < 24) return `${hours}h`;
   if (days < 7) return `${days}d`;
   return date.toLocaleDateString();
@@ -53,6 +54,7 @@ function ProjectArtwork({ type }: { type: string }) {
 }
 
 export function RecentProjects() {
+  const { t } = useT();
   const [projects, setProjects] = useState<AssetRecord[]>([]);
 
   useEffect(() => {
@@ -72,30 +74,30 @@ export function RecentProjects() {
     <section className="flex w-full flex-1 flex-col" aria-labelledby="recent-projects-title">
       <div className="mb-[19px] flex items-center justify-between">
         <h2 id="recent-projects-title" className="text-[16px] font-semibold text-[#F5F2F4]">
-          Proyectos recientes
+          {t("home.recentProjects")}
         </h2>
         <Link
           href="/assets"
           className="text-[14px] font-medium text-accent transition-colors duration-150 hover:text-accent-hi"
         >
-          Ver todos
+          {t("home.viewAll")}
         </Link>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-[18px] sm:grid-cols-3">
+      <div className="grid min-h-0 grid-cols-1 gap-[18px] sm:grid-cols-3">
         {projects.length === 0 ? (
           <div className="col-span-full grid min-h-[220px] place-items-center rounded-[12px] border border-white/[0.075] bg-[#151516] px-6 text-center">
             <div>
-              <p className="text-[14px] font-semibold text-[#F5F2F4]">Ainda sem assets reais</p>
+              <p className="text-[14px] font-semibold text-[#F5F2F4]">{t("home.emptyAssets")}</p>
               <p className="mt-2 max-w-[42ch] text-[13px] leading-5 text-[#7C818F]">
-                Gere um guion, miniatura ou pacote para ver o histórico aqui.
+                {t("home.emptyAssetsHint")}
               </p>
             </div>
           </div>
         ) : projects.map((project, index) => (
           <div
             key={project.id}
-            className="group flex flex-col overflow-hidden rounded-[12px] border border-white/[0.075] bg-[#151516] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-[rgba(208,111,167,0.22)]"
+            className="group flex h-[252px] flex-col overflow-hidden rounded-[12px] border border-white/[0.075] bg-[#151516] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-[rgba(208,111,167,0.22)]"
           >
             <div className="relative min-h-[130px] flex-1 overflow-hidden">
               {project.thumbnailPath ? (
@@ -111,11 +113,11 @@ export function RecentProjects() {
                 <p className="truncate text-[14px] font-semibold leading-[1.25] text-[#F5F2F4] transition-colors duration-150 group-hover:text-accent">
                   {project.title}
                 </p>
-                <p className="mt-[14px] text-[13px] leading-none text-[#7C818F]">{relativeTime(project.updatedAt)}</p>
+                <p className="mt-[14px] text-[13px] leading-none text-[#7C818F]">{relativeTime(project.updatedAt, t("home.now"))}</p>
               </div>
               <button
                 className="ml-2 mt-[28px] rounded-md p-1 text-[#A2A7B3] transition-colors duration-150 hover:bg-white/[0.05] hover:text-[#F5F2F4]"
-                aria-label="Más opciones"
+                aria-label={t("home.moreOptions")}
               >
                 <MoreHorizontal className="h-4 w-4" strokeWidth={1.55} />
               </button>

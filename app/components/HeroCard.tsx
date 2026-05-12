@@ -55,18 +55,18 @@ export function HeroCard() {
           Open Studio
         </span>
         <h2 className="text-[32px] sm:text-4xl font-bold text-[#F4F6FA] leading-tight tracking-tight mb-1">
-          De la idea al contenido
+          Da ideia ao conteúdo
         </h2>
         <h2 className="text-[32px] sm:text-4xl font-bold leading-tight tracking-tight mb-4">
           <span
             className="bg-clip-text text-transparent"
             style={{ backgroundImage: "linear-gradient(135deg, #D06FA7 0%, #9B6CFF 100%)" }}
           >
-            listo para publicar
+            pronto para publicar
           </span>
         </h2>
         <p className="text-sm text-[#9CA3AF] leading-relaxed max-w-md">
-          Todo lo que necesitas para guiones, miniaturas, música y assets creativos.
+          Tudo que você precisa para roteiros, miniaturas, pacotes e assets criativos.
         </p>
       </div>
     </div>

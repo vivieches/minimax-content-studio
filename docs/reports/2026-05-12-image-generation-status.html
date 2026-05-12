@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Open Studio - status real da geração de imagem</title>
+    <style>
+      :root { color-scheme: dark; --bg:#0a0a0d; --card:#151516; --line:#2a2a30; --ink:#f5f2f4; --muted:#a0a3ad; --accent:#d06fa7; --ok:#5ee09a; --warn:#f5c76b; }
+      body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.55 system-ui, -apple-system, Segoe UI, sans-serif; }
+      main { max-width:980px; margin:0 auto; padding:48px 24px; }
+      h1 { font-size:34px; line-height:1.1; margin:0 0 12px; }
+      h2 { font-size:20px; margin:30px 0 10px; }
+      p { color:var(--muted); margin:0 0 14px; }
+      ul { margin:0; padding-left:20px; color:var(--muted); }
+      li { margin:8px 0; }
+      code { color:var(--ink); background:#202024; border:1px solid var(--line); border-radius:6px; padding:1px 5px; }
+      a { color:var(--accent); }
+      .card { border:1px solid var(--line); background:var(--card); border-radius:14px; padding:18px; margin:18px 0; }
+      .ok { color:var(--ok); font-weight:700; }
+      .warn { color:var(--warn); font-weight:700; }
+      .grid { display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>O que estava acontecendo com imagens</h1>
+      <p>Texto via Gemini CLI funcionava porque o modo CLI local entra apenas no caminho de texto. Imagem não usa Gemini/Codex/Claude CLI hoje; ela usa providers de imagem salvos em Configurações.</p>
+
+      <div class="card">
+        <h2>Diagnóstico curto</h2>
+        <ul>
+          <li><span class="warn">MiniMax aparecia</span> porque era o provider padrão de imagem salvo. API key não troca provider/modelo sozinha.</li>
+          <li><span class="warn">Codex/Gemini CLI</span> geram texto no Open Studio, mas ainda não são um provider de imagem no app.</li>
+          <li><span class="ok">Agora existe</span> <code>POST /api/generate/thumbnails</code> para gerar lote real de 1 a 10 thumbnails.</li>
+          <li><span class="ok">Agora existe fallback</span>: se o provider padrão exige chave e está sem chave, o backend tenta Pollinations e devolve diagnóstico de fallback.</li>
+        </ul>
+      </div>
+
+      <div class="grid">
+        <section class="card">
+          <h2>Teste externo feito</h2>
+          <ul>
+            <li><code>https://gen.pollinations.ai/image/...</code> sem chave: retornou <code>401 Unauthorized</code>.</li>
+            <li><code>https://image.pollinations.ai/prompt/...</code> sem chave: retornou <code>200 OK</code> com <code>image/jpeg</code>.</li>
+            <li>Por isso o adapter usa endpoint legado quando não há chave e endpoint novo quando há chave.</li>
+          </ul>
+        </section>
+
+        <section class="card">
+          <h2>Smoke local feito</h2>
+          <ul>
+            <li><code>/api/generate/thumbnails</code> retornou <code>200</code> e salvou imagem real em <code>/generated/thumbnails/...</code>.</li>
+            <li>Teste com provider <code>pollinations</code> sem chave também retornou <code>200</code>.</li>
+            <li><code>npm run typecheck</code> passou depois das mudanças.</li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="card">
+        <h2>O caminho mais fácil para testar</h2>
+        <p>Para testar fluxo real sem pagar OpenAI agora, use <code>Pollinations</code> como provider de imagem. Se o endpoint legado continuar aceitando sem chave, funciona direto. Se ele bloquear, o caminho mais rápido é pegar uma chave gratuita/publishable em <a href="https://enter.pollinations.ai">enter.pollinations.ai</a> e salvar no provider Pollinations.</p>
+        <p>Para qualidade profissional estável, os caminhos continuam sendo pagos ou com quota: OpenAI GPT Image, Google Gemini/Imagen, fal.ai, Replicate, Together/FLUX, BFL.</p>
+      </div>
+
+      <div class="card">
+        <h2>Regras implementadas</h2>
+        <ul>
+          <li>A interface segue o idioma selecionado: PT-BR, ES-ES ou EN-US.</li>
+          <li>Novas gerações de texto seguem o idioma selecionado.</li>
+          <li>Prompts técnicos de imagem são enviados em inglês para melhorar resultado.</li>
+          <li>Qualquer texto visível na imagem deve ficar no idioma selecionado.</li>
+          <li>Thumbnails agora podem ser geradas em lote de até 10 imagens reais.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Fontes verificadas</h2>
+        <ul>
+          <li><a href="https://github.com/pollinations/pollinations/blob/main/APIDOCS.md">Pollinations API docs</a>: base <code>gen.pollinations.ai</code>, autenticação e endpoints.</li>
+          <li><a href="https://ai.google.dev/gemini-api/docs/image-generation">Google Gemini image generation docs</a>: Gemini/Nano Banana e Imagen via API.</li>
+          <li><a href="https://developers.openai.com/api/docs/guides/image-generation">OpenAI image generation docs</a>: Image API, Responses API e modelos GPT Image.</li>
+        </ul>
+      </div>
+    </main>
+  </body>
+</html>

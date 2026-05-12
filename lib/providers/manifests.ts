@@ -315,7 +315,7 @@ export const providerManifests: ProviderManifest[] = [
     id: "pollinations",
     adapterId: "pollinations",
     name: "Pollinations",
-    description: "Free-tier friendly image API for smoke tests and prototypes. Use a publishable or secret Pollinations key.",
+    description: "Free-tier friendly image API for smoke tests and prototypes. API key is optional for anonymous basic image calls.",
     capabilities: ["image"],
     defaultBaseUrl: "https://gen.pollinations.ai",
     defaultModels: {
@@ -327,6 +327,7 @@ export const providerManifests: ProviderManifest[] = [
     modelDiscovery: true,
     docsUrl: "https://github.com/pollinations/pollinations/blob/main/APIDOCS.md",
     authHeader: "Authorization: Bearer",
+    apiKeyOptional: true,
     requiresModelFor: ["image"],
     tags: ["preset", "image", "free-tier"],
   },
@@ -387,7 +388,7 @@ export function getManifestsForCapability(capability: ProviderCapability): Provi
 
 export function createDefaultProviderConfig(manifest: ProviderManifest): ProviderStoredConfig {
   return {
-    enabled: manifest.id === "minimax" || manifest.tags?.includes("local") === true,
+    enabled: manifest.id === "minimax" || manifest.tags?.includes("local") === true || manifest.apiKeyOptional === true,
     apiKey: "",
     baseUrl: manifest.defaultBaseUrl,
     models: { ...manifest.defaultModels },

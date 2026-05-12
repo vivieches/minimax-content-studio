@@ -19,6 +19,7 @@ export interface ProviderManifest {
   modelDiscovery: boolean;
   docsUrl: string;
   authHeader: string;
+  apiKeyOptional?: boolean;
   requiresModelFor: ActiveProviderCapability[];
   tags?: string[];
   extraDefaults?: Record<string, string>;

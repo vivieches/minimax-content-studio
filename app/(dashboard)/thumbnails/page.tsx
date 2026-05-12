@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import {
   AlertTriangle,
   Check,
@@ -24,7 +24,6 @@ import {
   Zap,
 } from "lucide-react";
 import { useT } from "@/lib/i18n";
-import { buildImageGenerationLocaleInstruction, type Locale } from "@/lib/locales";
 
 type ThumbnailConfig = {
   topic: string;
@@ -49,6 +48,14 @@ type ThumbnailResult = {
   urls: string[];
   base64s?: string[];
   finalPrompt?: string;
+  thumbnails?: Array<{
+    id: string;
+    url: string;
+    variation: number;
+    providerId: string;
+    model: string;
+    finalPrompt?: string;
+  }>;
 };
 
 const PRESETS = [
@@ -105,7 +112,7 @@ const HOOKS = ["A IA que mudou meu fluxo", "5 ferramentas que uso todo dia", "Au
 
 const INITIAL_CONFIG: ThumbnailConfig = {
   topic: "MiniMax M2.7 construiu minha fábrica de conteúdo",
-  title: "5 AI Tools in 2024",
+  title: "5 ferramentas de IA em 2026",
   impactText: "FÁBRICA DE CONTEÚDO",
   audience: "Criadores e YouTubers",
   visualStyle: "YouTube alto CTR",
@@ -121,34 +128,6 @@ const INITIAL_CONFIG: ThumbnailConfig = {
   referenceType: "face",
   resolution: "1920x1080",
 };
-
-function buildThumbnailPrompt(config: ThumbnailConfig, locale: Locale) {
-  const colorPreset = COLOR_OPTIONS.find((option) => option.id === config.colorPreference);
-  const textInstruction = config.safeTextMode
-    ? "Generate the base thumbnail without any text, letters, words, typography, logos, or watermarks. The impact text will be applied later as a front-end overlay."
-    : config.includeText
-      ? `Use large, bold, readable thumbnail text based on this meaning: "${config.impactText}". If needed, adapt it into the selected language. Keep it clean, high contrast, and readable on mobile.`
-      : "Do not add text to the image.";
-
-  return [
-    buildImageGenerationLocaleInstruction(locale, config.impactText),
-    "Professional YouTube thumbnail, 16:9, high CTR composition, modern creator aesthetic.",
-    `Video topic: ${config.topic}.`,
-    `Video title: ${config.title}.`,
-    `Target audience: ${config.audience}.`,
-    `Visual style: ${config.visualStyle}. Mood: ${config.mood}. Background: ${config.background}.`,
-    `Color direction: ${colorPreset?.label ?? config.colorPreference}, using strong contrast without changing the Open Studio product UI palette.`,
-    config.includeFace
-      ? "Include one expressive creator-style face as the main focal point, clear eyes, emotional reaction, clean studio lighting, no distorted face."
-      : "Use a strong product or concept focal point instead of a face.",
-    config.includeLogo
-      ? "Include only a subtle brand mark area if naturally relevant. Do not invent random logos."
-      : "No random logos or watermarks.",
-    textInstruction,
-    "Composition rules: clear focal point, bold readable hierarchy, clean layout, no clutter, no tiny text, no generic AI glow, no unreadable typography, no fake UI gibberish.",
-    `Output target: ${config.resolution}, sharp thumbnail suitable for YouTube search, home feed, and mobile preview.`,
-  ].join("\n");
-}
 
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
@@ -272,7 +251,6 @@ export default function ThumbnailGeneratorPage() {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const selectedUrl = result?.urls?.[selectedIndex] ?? "";
-  const prompt = useMemo(() => buildThumbnailPrompt(config, locale), [config, locale]);
   const impactWordCount = config.impactText.trim().split(/\s+/).filter(Boolean).length;
   const selectedColor = COLOR_OPTIONS.find((option) => option.id === config.colorPreference) ?? COLOR_OPTIONS[0];
   const canGenerate = Boolean(config.topic.trim() && config.title.trim() && config.impactText.trim());
@@ -329,7 +307,7 @@ export default function ThumbnailGeneratorPage() {
 
   function normalizeGenerationError(message: string) {
     const lower = message.toLowerCase();
-    if (lower.includes("api key") || lower.includes("provider") || lower.includes("settings")) {
+    if (lower.includes("api key") || lower.includes("provider") || lower.includes("settings") || lower.includes("chave")) {
       return "Configure um provedor em Configurações para gerar miniaturas.";
     }
     return "Não foi possível gerar a miniatura. Revise a conexão ou tente de novo.";
@@ -350,18 +328,28 @@ export default function ThumbnailGeneratorPage() {
     setError("");
 
     try {
-      const response = await fetch("/api/generate/image", {
+      const response = await fetch("/api/generate/thumbnails", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt,
+          topic: config.topic,
+          title: config.title,
+          impactText: config.impactText,
+          audience: config.audience,
+          visualStyle: config.visualStyle,
+          mood: config.mood,
+          background: config.background,
+          colorPreference: selectedColor.label,
+          includeFace: config.includeFace,
+          includeLogo: config.includeLogo,
+          includeText: config.includeText,
+          safeTextMode: config.safeTextMode,
+          quantity: nextVariations,
           aspectRatio: "16:9",
-          n: nextVariations,
-          saveToAssets: true,
           referenceImage: config.referenceImage || undefined,
           referenceType: config.referenceImage ? config.referenceType : undefined,
           locale,
-          visibleText: config.impactText,
+          saveToAssets: true,
         }),
       });
       const data = await response.json();
@@ -377,12 +365,12 @@ export default function ThumbnailGeneratorPage() {
         if (!append || !current?.urls?.length) return data;
         return {
           ...data,
-          urls: [...current.urls, ...data.urls].slice(-8),
+          urls: [...current.urls, ...data.urls].slice(-10),
           finalPrompt: data.finalPrompt || current.finalPrompt,
         };
       });
       if (!append) setSelectedIndex(0);
-      showStatus(append ? "Variações geradas" : "Miniatura gerada");
+      showStatus(append ? "Novas imagens geradas" : "Miniaturas geradas");
     } catch (generationError) {
       setError(normalizeGenerationError(generationError instanceof Error ? generationError.message : ""));
     } finally {
@@ -609,16 +597,16 @@ export default function ThumbnailGeneratorPage() {
               </button>
               {advancedOpen ? (
                 <div className="space-y-3 border-t border-line px-5 py-4">
-                  <Toggle label="Incluir rostro" checked={config.includeFace} onChange={(value) => updateConfig("includeFace", value)} />
+                  <Toggle label="Incluir rosto" checked={config.includeFace} onChange={(value) => updateConfig("includeFace", value)} />
                   <Toggle label="Incluir logo" checked={config.includeLogo} onChange={(value) => updateConfig("includeLogo", value)} />
                   <Toggle label="Incluir texto" checked={config.includeText} onChange={(value) => updateConfig("includeText", value)} />
                   <Toggle label="Modo overlay de texto seguro" checked={config.safeTextMode} onChange={(value) => updateConfig("safeTextMode", value)} />
-                  <Field label="Número de variaciones">
+                  <Field label="Número de imagens">
                     <SelectField
-                      ariaLabel="Número de variaciones"
+                      ariaLabel="Número de imagens"
                       value={String(config.variations)}
                       onChange={(value) => updateConfig("variations", Number(value))}
-                      options={["1", "2", "3", "4"]}
+                      options={["1", "2", "3", "4", "5", "6", "8", "10"]}
                     />
                   </Field>
                   <Field label="Formato">
@@ -673,7 +661,7 @@ export default function ThumbnailGeneratorPage() {
                   className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[9px] bg-accent px-5 text-[13px] font-semibold text-accent-fg shadow-[0_12px_34px_rgba(208,111,167,0.18)] transition duration-200 hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" strokeWidth={1.8} />}
-                  {loading ? "Gerando..." : "Gerar miniatura"}
+                  {loading ? "Gerando..." : `Gerar ${config.variations} ${config.variations === 1 ? "imagem" : "imagens"}`}
                 </button>
               </div>
             </div>
@@ -703,7 +691,7 @@ export default function ThumbnailGeneratorPage() {
                   <p className="text-[13px] font-medium text-ink-2">Gerando miniatura...</p>
                 </div>
               ) : selectedUrl ? (
-                <Image src={selectedUrl} alt="Miniatura generada" fill className="object-cover" sizes="(max-width: 1280px) 100vw, 50vw" unoptimized />
+                <Image src={selectedUrl} alt="Miniatura gerada" fill className="object-cover" sizes="(max-width: 1280px) 100vw, 50vw" unoptimized />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
                   <div className="mb-4 grid h-14 w-14 place-items-center rounded-[12px] border border-line bg-card">
@@ -745,7 +733,7 @@ export default function ThumbnailGeneratorPage() {
                         : "border-line hover:border-line-hi"
                     } ${!url ? "cursor-default opacity-55" : ""}`}
                   >
-                    {url ? <Image src={url} alt={`Variación ${index + 1}`} fill className="object-cover" sizes="180px" unoptimized /> : null}
+                    {url ? <Image src={url} alt={`Variação ${index + 1}`} fill className="object-cover" sizes="180px" unoptimized /> : null}
                     {!url ? <span className="absolute inset-0 grid place-items-center text-[11px] text-ink-3">Não gerada</span> : null}
                     <span className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-[6px] bg-black/45 text-white opacity-90">
                       <MoreHorizontal className="h-3.5 w-3.5" />
@@ -761,7 +749,7 @@ export default function ThumbnailGeneratorPage() {
                   className="inline-flex h-10 items-center gap-2 rounded-[9px] border border-accent/45 bg-card px-5 text-[13px] font-semibold text-accent transition duration-200 hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   {variationsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" strokeWidth={1.8} />}
-                  Gerar mais variações
+                  Gerar mais imagens
                 </button>
               </div>
             </div>
@@ -891,7 +879,7 @@ export default function ThumbnailGeneratorPage() {
                       <Image src={url} alt={`Histórico ${index + 1}`} fill className="object-cover" unoptimized />
                     </span>
                     <span>
-                      <span className="block text-[13px] font-semibold text-ink">Miniatura generada v{index + 1}</span>
+                      <span className="block text-[13px] font-semibold text-ink">Miniatura gerada v{index + 1}</span>
                       <span className="mt-1 block text-[12px] text-ink-3">Sessão atual</span>
                     </span>
                   </button>

@@ -5,7 +5,7 @@ import type {
   ProviderRuntimeConfig,
   ProviderTestResult,
 } from "../types";
-import { getModelForCapability, joinUrl, readError, requireApiKey, requireModel, toDataUrl } from "../http";
+import { getModelForCapability, joinUrl, readError, requireModel, toDataUrl } from "../http";
 
 function dimensionsForAspectRatio(aspectRatio?: string) {
   if (aspectRatio === "1:1") return { width: "1024", height: "1024" };
@@ -13,11 +13,18 @@ function dimensionsForAspectRatio(aspectRatio?: string) {
   return { width: "1280", height: "720" };
 }
 
+function imageEndpointUrl(config: ProviderRuntimeConfig, prompt: string) {
+  const encodedPrompt = encodeURIComponent(prompt);
+  if (config.apiKey) return joinUrl(config.baseUrl, `/image/${encodedPrompt}`);
+  if (config.baseUrl.includes("image.pollinations.ai")) return joinUrl(config.baseUrl, encodedPrompt);
+  if (config.baseUrl.includes("gen.pollinations.ai")) return `https://image.pollinations.ai/prompt/${encodedPrompt}`;
+  return joinUrl(config.baseUrl, `/image/${encodedPrompt}`);
+}
+
 function authHeaders(config: ProviderRuntimeConfig) {
-  return {
-    Authorization: `Bearer ${config.apiKey}`,
-    ...config.customHeaders,
-  };
+  const headers: Record<string, string> = { ...config.customHeaders };
+  if (config.apiKey) headers.Authorization = `Bearer ${config.apiKey}`;
+  return headers;
 }
 
 async function fetchImageDataUrl(url: URL, config: ProviderRuntimeConfig): Promise<string> {
@@ -40,8 +47,7 @@ async function fetchImageDataUrl(url: URL, config: ProviderRuntimeConfig): Promi
 export const pollinationsAdapter: ProviderAdapter = {
   async testConnection(config: ProviderRuntimeConfig): Promise<ProviderTestResult> {
     try {
-      requireApiKey(config);
-      const response = await fetch(joinUrl(config.baseUrl, "/account/key"), {
+      const response = await fetch(joinUrl(config.baseUrl, "/image/models"), {
         headers: authHeaders(config),
       });
 
@@ -85,7 +91,6 @@ export const pollinationsAdapter: ProviderAdapter = {
     request: ImageGenerationRequest,
     config: ProviderRuntimeConfig
   ): Promise<ImageGenerationResult> {
-    requireApiKey(config);
     const model = getModelForCapability(config, "image", request.model);
     requireModel(model, config);
 
@@ -93,7 +98,7 @@ export const pollinationsAdapter: ProviderAdapter = {
     const count = request.n ?? 1;
     const urls = await Promise.all(
       Array.from({ length: count }, async (_, index) => {
-        const url = new URL(joinUrl(config.baseUrl, `/image/${encodeURIComponent(request.prompt)}`));
+        const url = new URL(imageEndpointUrl(config, request.prompt));
         url.searchParams.set("model", model);
         url.searchParams.set("width", width);
         url.searchParams.set("height", height);

@@ -369,7 +369,7 @@ export async function buildProviderCatalog(input: {
         integrationStatus: "integrated",
         active: manifest.capabilities.includes("text") || manifest.capabilities.includes("image"),
         enabled: Boolean(config?.enabled),
-        configured: Boolean(config?.enabled && (hasApiKey || manifest.authHeader === "none")),
+        configured: Boolean(config?.enabled && (hasApiKey || manifest.authHeader === "none" || manifest.apiKeyOptional)),
         hasApiKey,
         configuredModels,
         modelsByCapability,

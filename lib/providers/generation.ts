@@ -202,6 +202,20 @@ function applyImageLocale(request: ImageGenerationRequest, locale: ReturnType<ty
   };
 }
 
+function shouldUseAnonymousImageFallback(config: Awaited<ReturnType<typeof resolveProviderConfig>>) {
+  return config.manifest.authHeader !== "none" && !config.manifest.apiKeyOptional && !config.apiKey?.trim();
+}
+
+async function generateImageByConfig(
+  request: ImageGenerationRequest,
+  override?: ProviderOverride
+): Promise<ImageGenerationResult> {
+  const config = await resolveProviderConfig("image", override);
+  const adapter = getAdapterForProvider(config.providerId);
+  if (!adapter.generateImage) throw new Error(`${config.manifest.name} does not support image generation.`);
+  return adapter.generateImage(request, config);
+}
+
 export async function generateTextWithProvider(
   request: TextGenerationRequest,
   override?: ProviderOverride
@@ -346,6 +360,27 @@ export async function generateImageWithProvider(
   }
 
   const config = await resolveProviderConfig("image", override);
+  if (!override && shouldUseAnonymousImageFallback(config)) {
+    const fallback = await generateImageByConfig(localizedRequest, { providerId: "pollinations", model: "flux" });
+    return {
+      ...fallback,
+      diagnostics: [
+        ...(fallback.diagnostics ?? []),
+        fallbackDiagnostic({
+          kind: "fallback_used",
+          from: config.providerId,
+          to: fallback.providerId,
+          model: fallback.model,
+          reason: `${config.manifest.name} esta sem API key; usei Pollinations para uma imagem real de teste.`,
+        }),
+      ],
+      raw: {
+        ...(fallback.raw && typeof fallback.raw === "object" ? (fallback.raw as Record<string, unknown>) : {}),
+        fallbackFrom: config.providerId,
+      },
+    };
+  }
+
   const adapter = getAdapterForProvider(config.providerId);
   if (!adapter.generateImage) throw new Error(`${config.manifest.name} does not support image generation.`);
   return adapter.generateImage(localizedRequest, config);

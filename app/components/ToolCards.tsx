@@ -6,8 +6,8 @@ const tools = [
   {
     href: "/scripts",
     icon: FileText,
-    label: "Guion",
-    description: "Genera guiones",
+    label: "Roteiro",
+    description: "Gera roteiros",
   },
   {
     href: "/thumbnails",

@@ -199,6 +199,28 @@ export const imageProviderGenerateSchema = imageGenerateSchema.extend({
   provider: providerOverrideSchema.optional(),
 });
 
+export const thumbnailBatchGenerateSchema = z.object({
+  topic: z.string().min(1).max(4000),
+  title: z.string().max(1000).optional(),
+  impactText: z.string().max(500).optional(),
+  audience: z.string().max(500).optional(),
+  visualStyle: z.string().max(500).optional(),
+  mood: z.string().max(500).optional(),
+  background: z.string().max(500).optional(),
+  colorPreference: z.string().max(500).optional(),
+  includeFace: z.boolean().optional().default(false),
+  includeLogo: z.boolean().optional().default(false),
+  includeText: z.boolean().optional().default(true),
+  safeTextMode: z.boolean().optional().default(false),
+  quantity: z.number().int().min(1).max(10).optional().default(1),
+  aspectRatio: z.string().max(20).optional().default("16:9"),
+  referenceImage: z.string().max(500000).optional(),
+  referenceType: z.enum(["face", "style"]).optional(),
+  provider: providerOverrideSchema.optional(),
+  locale: localeSchema.optional(),
+  saveToAssets: z.boolean().optional().default(true),
+});
+
 export const titleGenerateSchema = z.object({
   topic: z.string().min(1),
   briefing: z.string().optional(),
