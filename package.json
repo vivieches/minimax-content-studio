@@ -2,8 +2,14 @@
   "name": "open-studio",
   "version": "0.1.0",
   "private": true,
+  "bin": {
+    "open-studio": "scripts/open-studio.mjs",
+    "open-studio-daemon": "scripts/open-studio-daemon.mjs"
+  },
   "scripts": {
     "dev": "next dev",
+    "daemon": "node scripts/open-studio-daemon.mjs serve",
+    "daemon:health": "node scripts/open-studio-daemon.mjs health",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

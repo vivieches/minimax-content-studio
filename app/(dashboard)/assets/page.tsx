@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import Image from "next/image";
 import {
   Archive,
@@ -35,6 +35,43 @@ type AssetTypeFilter = AssetRecord["type"] | "all";
 type DateRange = "7" | "30" | "90" | "year" | "all";
 type SortKey = "recent" | "oldest" | "name" | "type" | "size";
 type ViewMode = "grid" | "list";
+type ProjectFileKind = "text" | "image" | "video" | "audio" | "json" | "markdown" | "binary";
+
+type ProjectRecord = {
+  id: string;
+  name: string;
+  status: "draft" | "active" | "archived";
+  updatedAt: string;
+};
+
+type ProjectFileEntry = {
+  name: string;
+  path: string;
+  size: number;
+  mtime: number;
+  kind: ProjectFileKind;
+  mime: string;
+};
+
+type LivePackageArtifact = {
+  project: ProjectRecord;
+  title: string;
+  selectedTitle: string;
+  script: string;
+  description: string;
+  thumbnailPrompt: string;
+  thumbnailText: string;
+  titleCount: number;
+  topTitles: string[];
+  captionsCount: number;
+  critiqueScore?: number;
+  provenance: {
+    packagePath: string;
+    sourceFiles: string[];
+    refreshedAt: string;
+    packageUpdatedAt: number;
+  };
+};
 
 const PAGE_SIZE = 12;
 
@@ -127,6 +164,24 @@ function getThumbnailCandidates(asset: AssetRecord) {
     : [];
   const candidates = [asset.thumbnailPath, ...urls, ...remoteUrls].filter((url): url is string => Boolean(url));
   return Array.from(new Set(candidates));
+}
+
+function isEditableProjectFile(file: ProjectFileEntry | null) {
+  return Boolean(file && ["text", "markdown", "json"].includes(file.kind));
+}
+
+function projectFileUrl(projectId: string, path: string) {
+  return `/api/projects/${encodeURIComponent(projectId)}/files/${path.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+function formatProjectFileSize(bytes: number) {
+  if (bytes < 1024) return `${Math.max(bytes, 1)} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function safeUploadName(name: string) {
+  return name.replace(/[^\w.\-]+/g, "-").replace(/^-+|-+$/g, "") || "upload.txt";
 }
 
 function IconButton({
@@ -438,6 +493,7 @@ function Modal({
 
 export default function AssetsPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const workspaceFileInputRef = useRef<HTMLInputElement | null>(null);
   const [assets, setAssets] = useState<AssetRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -457,7 +513,17 @@ export default function AssetsPage() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [projects, setProjects] = useState<ProjectRecord[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [projectFiles, setProjectFiles] = useState<ProjectFileEntry[]>([]);
+  const [selectedFile, setSelectedFile] = useState<ProjectFileEntry | null>(null);
+  const [editorContent, setEditorContent] = useState("");
+  const [workspaceLoading, setWorkspaceLoading] = useState(false);
+  const [fileSaving, setFileSaving] = useState(false);
+  const [workspaceError, setWorkspaceError] = useState("");
+  const [liveArtifact, setLiveArtifact] = useState<LivePackageArtifact | null>(null);
   const [now] = useState(() => Date.now());
+  const selectedProjectIdRef = useRef("");
 
   async function loadAssets(showSpinner = true) {
     if (showSpinner) setLoading(true);
@@ -474,12 +540,66 @@ export default function AssetsPage() {
     }
   }
 
+  const loadWorkspace = useCallback(async (showSpinner = false, projectIdOverride?: string) => {
+    if (showSpinner) setWorkspaceLoading(true);
+    setWorkspaceError("");
+    try {
+      const projectsResponse = await fetch("/api/projects");
+      const projectsData = (await projectsResponse.json()) as { ok?: boolean; projects?: ProjectRecord[]; error?: string };
+      if (!projectsResponse.ok || !projectsData.ok) throw new Error(projectsData.error || "No se pudo cargar proyectos.");
+      const nextProjects = projectsData.projects ?? [];
+      setProjects(nextProjects);
+
+      const nextProjectId = projectIdOverride || selectedProjectIdRef.current || nextProjects[0]?.id || "";
+      setSelectedProjectId(nextProjectId);
+      if (!nextProjectId) {
+        setProjectFiles([]);
+        setSelectedFile(null);
+        setEditorContent("");
+        setLiveArtifact(null);
+        return;
+      }
+
+      const [filesResponse, artifactResponse] = await Promise.all([
+        fetch(`/api/projects/${encodeURIComponent(nextProjectId)}/files`),
+        fetch(`/api/live-artifacts/package?projectId=${encodeURIComponent(nextProjectId)}`),
+      ]);
+      const filesData = (await filesResponse.json()) as { ok?: boolean; files?: ProjectFileEntry[]; error?: string };
+      const artifactData = (await artifactResponse.json()) as { ok?: boolean; artifact?: LivePackageArtifact | null };
+      if (!filesResponse.ok || !filesData.ok) throw new Error(filesData.error || "No se pudo cargar archivos del proyecto.");
+
+      setProjectFiles(filesData.files ?? []);
+      setLiveArtifact(artifactData.artifact ?? null);
+    } catch (workspaceLoadError) {
+      setWorkspaceError(workspaceLoadError instanceof Error ? workspaceLoadError.message : "No se pudo cargar el workspace.");
+    } finally {
+      setWorkspaceLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void loadAssets(false);
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    selectedProjectIdRef.current = selectedProjectId;
+  }, [selectedProjectId]);
+
+  useEffect(() => {
+    const initial = window.setTimeout(() => {
+      void loadWorkspace(true);
+    }, 0);
+    const timer = window.setInterval(() => {
+      void loadWorkspace(false);
+    }, 5000);
+    return () => {
+      window.clearTimeout(initial);
+      window.clearInterval(timer);
+    };
+  }, [loadWorkspace]);
 
   function showMessage(value: string) {
     setMessage(value);
@@ -732,6 +852,104 @@ export default function AssetsPage() {
     }
   }
 
+  async function createWorkspaceProject() {
+    try {
+      const response = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "Open Studio package", metadata: { createdBy: "assets-workspace" } }),
+      });
+      const data = (await response.json()) as { ok?: boolean; project?: ProjectRecord; error?: string };
+      if (!response.ok || !data.ok || !data.project) throw new Error(data.error || "Project creation failed");
+      setProjects((current) => [data.project!, ...current]);
+      await loadWorkspace(true, data.project.id);
+      showMessage("Projeto criado");
+    } catch {
+      showMessage("Não foi possível criar o projeto");
+    }
+  }
+
+  async function openProjectFile(file: ProjectFileEntry) {
+    setSelectedFile(file);
+    setEditorContent("");
+    if (!selectedProjectId || !isEditableProjectFile(file)) return;
+    try {
+      const response = await fetch(projectFileUrl(selectedProjectId, file.path));
+      const text = await response.text();
+      if (!response.ok) throw new Error(text);
+      setEditorContent(text);
+    } catch {
+      showMessage("Não foi possível abrir o arquivo");
+    }
+  }
+
+  async function saveProjectFile() {
+    if (!selectedProjectId || !selectedFile || !isEditableProjectFile(selectedFile)) return;
+    setFileSaving(true);
+    try {
+      const response = await fetch(projectFileUrl(selectedProjectId, selectedFile.path), {
+        method: "PUT",
+        headers: { "Content-Type": selectedFile.mime || "text/plain; charset=utf-8" },
+        body: editorContent,
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || "Save failed");
+      await loadWorkspace(false, selectedProjectId);
+      showMessage("Arquivo salvo");
+    } catch {
+      showMessage("Não foi possível salvar");
+    } finally {
+      setFileSaving(false);
+    }
+  }
+
+  async function pasteProjectFile() {
+    if (!selectedProjectId) {
+      showMessage("Crie ou selecione um projeto primeiro");
+      return;
+    }
+    const clipboardText = await navigator.clipboard.readText().catch(() => "");
+    const content = clipboardText || window.prompt("Cole o conteúdo do arquivo") || "";
+    if (!content.trim()) return;
+    const path = `files/manual/paste-${Date.now()}.md`;
+    try {
+      const response = await fetch(projectFileUrl(selectedProjectId, path), {
+        method: "PUT",
+        headers: { "Content-Type": "text/markdown; charset=utf-8" },
+        body: content,
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || "Paste failed");
+      await loadWorkspace(false, selectedProjectId);
+      await openProjectFile(data.file);
+      showMessage("Conteúdo colado no projeto");
+    } catch {
+      showMessage("Não foi possível colar no workspace");
+    }
+  }
+
+  async function handleWorkspaceFileUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file || !selectedProjectId) return;
+    const path = `files/uploads/${Date.now()}-${safeUploadName(file.name)}`;
+    try {
+      const response = await fetch(projectFileUrl(selectedProjectId, path), {
+        method: "PUT",
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: file,
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || "Upload failed");
+      await loadWorkspace(false, selectedProjectId);
+      await openProjectFile(data.file);
+      showMessage("Arquivo enviado ao projeto");
+    } catch {
+      showMessage("Não foi possível enviar ao projeto");
+    } finally {
+      event.target.value = "";
+    }
+  }
+
   const typeOrder: AssetTypeFilter[] = ["all", "script", "thumbnail", "export", "prompt"];
 
   return (
@@ -896,6 +1114,177 @@ export default function AssetsPage() {
               {error || message}
             </div>
           )}
+
+          <section className="rounded-[13px] border border-line bg-card p-4">
+            <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+              <div>
+                <h2 className="text-[16px] font-semibold text-ink">Workspace do projeto</h2>
+                <p className="mt-1 text-[13px] text-ink-2">
+                  Arquivos reais em `.open-studio/projects`, com editor e preview vivo do pacote.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <select
+                  value={selectedProjectId}
+                  onChange={(event) => {
+                    const nextProjectId = event.target.value;
+                    setSelectedProjectId(nextProjectId);
+                    setSelectedFile(null);
+                    setEditorContent("");
+                    void loadWorkspace(true, nextProjectId);
+                  }}
+                  className="h-10 min-w-[240px] rounded-[8px] border border-line bg-card-hi px-3 text-[13px] text-ink"
+                >
+                  <option value="">Sem projeto</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+                <button type="button" onClick={createWorkspaceProject} className="h-10 rounded-[8px] border border-line px-3 text-[12px] font-semibold text-ink-2 hover:bg-hover">
+                  Novo projeto
+                </button>
+                <button type="button" onClick={() => void loadWorkspace(true, selectedProjectId)} className="h-10 rounded-[8px] border border-line px-3 text-[12px] font-semibold text-ink-2 hover:bg-hover">
+                  Atualizar
+                </button>
+              </div>
+            </div>
+
+            {workspaceError ? (
+              <div className="mb-3 rounded-[9px] border border-danger/25 bg-danger-soft px-3 py-2 text-[12px] text-danger">
+                {workspaceError}
+              </div>
+            ) : null}
+
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[260px_minmax(0,1fr)_320px]">
+              <div className="rounded-[11px] border border-line bg-card-hi p-3">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-3">Arquivos</p>
+                  {workspaceLoading ? <Loader2 className="h-4 w-4 animate-spin text-accent" /> : null}
+                </div>
+                <div className="max-h-[350px] space-y-1 overflow-y-auto">
+                  {projectFiles.length ? (
+                    projectFiles.map((file) => (
+                      <button
+                        type="button"
+                        key={file.path}
+                        onClick={() => void openProjectFile(file)}
+                        className={cx(
+                          "w-full rounded-[8px] px-3 py-2 text-left transition hover:bg-hover",
+                          selectedFile?.path === file.path ? "bg-accent-soft text-accent" : "text-ink-2",
+                        )}
+                      >
+                        <span className="block truncate text-[12px] font-semibold">{file.path}</span>
+                        <span className="text-[11px] text-ink-3">{file.kind} · {formatProjectFileSize(file.size)}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="rounded-[8px] border border-line bg-card px-3 py-4 text-[12px] leading-5 text-ink-3">
+                      Nenhum arquivo de projeto ainda.
+                    </p>
+                  )}
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button type="button" onClick={pasteProjectFile} className="h-9 rounded-[8px] border border-line text-[12px] font-semibold text-ink-2 hover:bg-hover">
+                    Colar
+                  </button>
+                  <button type="button" onClick={() => workspaceFileInputRef.current?.click()} className="h-9 rounded-[8px] border border-line text-[12px] font-semibold text-ink-2 hover:bg-hover">
+                    Upload
+                  </button>
+                  <input ref={workspaceFileInputRef} type="file" className="hidden" accept="image/*,.txt,.md,.json,.csv" onChange={handleWorkspaceFileUpload} />
+                </div>
+              </div>
+
+              <div className="min-h-[350px] rounded-[11px] border border-line bg-card-hi p-3">
+                {selectedFile ? (
+                  <div className="flex h-full flex-col">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="truncate text-[13px] font-semibold text-ink">{selectedFile.path}</h3>
+                        <p className="text-[11px] text-ink-3">{selectedFile.mime}</p>
+                      </div>
+                      {isEditableProjectFile(selectedFile) ? (
+                        <button
+                          type="button"
+                          onClick={saveProjectFile}
+                          disabled={fileSaving}
+                          className="inline-flex h-9 items-center gap-2 rounded-[8px] bg-accent px-3 text-[12px] font-semibold text-accent-fg disabled:opacity-50"
+                        >
+                          {fileSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                          Salvar
+                        </button>
+                      ) : null}
+                    </div>
+                    {isEditableProjectFile(selectedFile) ? (
+                      <textarea
+                        value={editorContent}
+                        onChange={(event) => setEditorContent(event.target.value)}
+                        className="min-h-[280px] flex-1 resize-y rounded-[9px] border border-line bg-card px-3 py-3 font-mono text-[12px] leading-5 text-ink placeholder:text-ink-3 focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/15"
+                        spellCheck={false}
+                      />
+                    ) : selectedFile.kind === "image" && selectedProjectId ? (
+                      <div className="relative min-h-[280px] flex-1 overflow-hidden rounded-[9px] border border-line bg-card">
+                        <Image src={projectFileUrl(selectedProjectId, selectedFile.path)} alt={selectedFile.path} fill className="object-contain" unoptimized />
+                      </div>
+                    ) : (
+                      <div className="grid min-h-[280px] place-items-center rounded-[9px] border border-line bg-card text-center text-[12px] text-ink-3">
+                        Preview direto ainda não disponível para este tipo de arquivo.
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid h-full min-h-[320px] place-items-center text-center">
+                    <div>
+                      <FileText className="mx-auto h-9 w-9 text-accent" />
+                      <p className="mt-3 text-[13px] font-semibold text-ink">Selecione um arquivo do projeto</p>
+                      <p className="mt-1 text-[12px] text-ink-3">Markdown, JSON e texto podem ser editados aqui.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-[11px] border border-line bg-card-hi p-4">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-3">Live artifact</p>
+                    <h3 className="mt-2 text-[15px] font-semibold text-ink">{liveArtifact?.selectedTitle || "Sem pacote ativo"}</h3>
+                  </div>
+                  {liveArtifact?.critiqueScore ? (
+                    <span className="rounded-full border border-accent/25 px-2 py-1 text-[12px] font-semibold text-accent">
+                      {liveArtifact.critiqueScore}/100
+                    </span>
+                  ) : null}
+                </div>
+                {liveArtifact ? (
+                  <div className="space-y-3 text-[12px] leading-5 text-ink-2">
+                    {liveArtifact.description ? <p>{liveArtifact.description}</p> : null}
+                    <div className="grid grid-cols-3 gap-2">
+                      <span className="rounded-[8px] border border-line bg-card px-2 py-2 text-center">{liveArtifact.titleCount}<br />títulos</span>
+                      <span className="rounded-[8px] border border-line bg-card px-2 py-2 text-center">{liveArtifact.captionsCount}<br />legendas</span>
+                      <span className="rounded-[8px] border border-line bg-card px-2 py-2 text-center">{liveArtifact.provenance.sourceFiles.length}<br />fontes</span>
+                    </div>
+                    {liveArtifact.topTitles.length ? (
+                      <ol className="space-y-1">
+                        {liveArtifact.topTitles.slice(0, 3).map((title, index) => (
+                          <li key={`${title}-${index}`} className="rounded-[7px] bg-card px-2 py-1">
+                            {index + 1}. {title}
+                          </li>
+                        ))}
+                      </ol>
+                    ) : null}
+                    <p className="rounded-[8px] border border-line bg-card px-3 py-2 text-ink-3">
+                      Fonte: {liveArtifact.provenance.packagePath}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-[12px] leading-5 text-ink-3">
+                    Gere um pipeline ou crie `files/package.json` para ver o preview vivo.
+                  </p>
+                )}
+              </div>
+            </div>
+          </section>
 
           {featuredAsset ? (
             <button

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   BadgeCheck,
   Captions,
@@ -31,8 +31,28 @@ type CaptionResponse = {
   ok: boolean;
   captions?: string[];
   notes?: string[];
+  hashtags?: string[];
+  keywords?: string[];
   error?: string;
   details?: string;
+};
+
+type CreatorProfile = {
+  tiktok: string;
+  instagram: string;
+  x: string;
+  businessEmail: string;
+  primaryLinkLabel: string;
+  primaryLinkUrl: string;
+  language: "auto" | "pt-BR" | "es" | "en";
+};
+
+type TitleAsset = {
+  title: string;
+  description: string;
+  content?: string;
+  sourceModule?: string;
+  metadata?: Record<string, unknown>;
 };
 
 function Panel({ children, className = "" }: { children: ReactNode; className?: string }) {
@@ -73,19 +93,70 @@ async function copyText(text: string) {
   await navigator.clipboard.writeText(text);
 }
 
+function stringMetadata(metadata: Record<string, unknown> | undefined, key: string) {
+  const value = metadata?.[key];
+  return typeof value === "string" ? value : "";
+}
+
+function parseStoredTitlePack(asset: TitleAsset): TitleResponse | null {
+  if (!asset.content) return null;
+  try {
+    const parsed = JSON.parse(asset.content) as TitleResponse;
+    return {
+      ok: true,
+      candidates: Array.isArray(parsed.candidates) ? parsed.candidates : [],
+      top3: Array.isArray(parsed.top3) ? parsed.top3 : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function ContentToolsPage() {
   const [topic, setTopic] = useState("Como usar IA local para criar conteúdo sem depender de uma única API");
   const [briefing, setBriefing] = useState("");
   const [thumbnailConcept, setThumbnailConcept] = useState("");
   const [outlierNotes, setOutlierNotes] = useState("");
+  const [useResearch, setUseResearch] = useState(false);
   const [script, setScript] = useState("");
   const [captionPattern, setCaptionPattern] = useState("");
+  const [creatorProfile, setCreatorProfile] = useState<CreatorProfile>({
+    tiktok: "",
+    instagram: "",
+    x: "",
+    businessEmail: "",
+    primaryLinkLabel: "",
+    primaryLinkUrl: "",
+    language: "auto",
+  });
   const [loadingTitles, setLoadingTitles] = useState(false);
   const [loadingCaptions, setLoadingCaptions] = useState(false);
   const [titleResult, setTitleResult] = useState<TitleResponse | null>(null);
   const [captionResult, setCaptionResult] = useState<CaptionResponse | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    async function loadLatestTitlePack() {
+      try {
+        const response = await fetch("/api/assets?type=prompt&limit=25");
+        const data = (await response.json()) as { ok?: boolean; assets?: TitleAsset[] };
+        const asset = data.assets?.find((item) => item.sourceModule === "title-generator");
+        if (!asset) return;
+        const parsed = parseStoredTitlePack(asset);
+        if (!parsed) return;
+        setTitleResult(parsed);
+        setTopic(stringMetadata(asset.metadata, "topic") || asset.title.replace(/^Title Pack - /, ""));
+        setBriefing(stringMetadata(asset.metadata, "briefing") || asset.description || "");
+        setThumbnailConcept(stringMetadata(asset.metadata, "thumbnailConcept"));
+        setOutlierNotes(stringMetadata(asset.metadata, "outlierNotes"));
+      } catch {
+        // Loading the latest saved package is a convenience; generation still works without it.
+      }
+    }
+
+    void loadLatestTitlePack();
+  }, []);
 
   function flash(message: string) {
     setNotice(message);
@@ -109,6 +180,7 @@ export default function ContentToolsPage() {
           briefing,
           thumbnailConcept,
           outlierNotes,
+          research: useResearch,
           count: 10,
           saveToAssets: true,
         }),
@@ -129,10 +201,6 @@ export default function ContentToolsPage() {
       setError("Cole um roteiro antes de gerar legendas.");
       return;
     }
-    if (!captionPattern.trim()) {
-      setError("Adicione o padrão de legenda do Lucas antes de gerar.");
-      return;
-    }
 
     setError("");
     setLoadingCaptions(true);
@@ -142,7 +210,10 @@ export default function ContentToolsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           script,
+          topic,
+          title: titleResult?.top3?.[0]?.title || topic,
           pattern: captionPattern,
+          creatorProfile,
           saveToAssets: true,
         }),
       });
@@ -160,6 +231,7 @@ export default function ContentToolsPage() {
   const top3 = titleResult?.top3 ?? [];
   const allTitles = titleResult?.candidates ?? [];
   const captions = captionResult?.captions ?? [];
+  const captionKeywords = captionResult?.keywords ?? [];
 
   return (
     <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-canvas text-ink">
@@ -232,7 +304,16 @@ export default function ContentToolsPage() {
                 </label>
               </div>
 
-              <div className="mt-5 flex justify-end">
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <label className="flex items-center gap-3 text-[13px] text-ink-2">
+                  <input
+                    type="checkbox"
+                    checked={useResearch}
+                    onChange={(event) => setUseResearch(event.target.checked)}
+                    className="h-4 w-4 accent-accent"
+                  />
+                  Pesquisar outliers com Tavily
+                </label>
                 <button
                   type="button"
                   onClick={generateTitles}
@@ -250,7 +331,7 @@ export default function ContentToolsPage() {
                 <div>
                   <h2 className="text-[17px] font-semibold text-ink">Gerar legendas</h2>
                   <p className="mt-2 max-w-[70ch] text-[13px] leading-5 text-ink-2">
-                    Esta rota já existe, mas só gera quando você informar o padrão de legenda. Assim não inventamos uma regra errada.
+                    Gera a descrição/legenda SEO no padrão Lucas, adaptando hashtags, palavras-chave, CTA e redes sociais ao roteiro.
                   </p>
                 </div>
                 <Captions className="mt-1 h-5 w-5 shrink-0 text-accent" />
@@ -264,7 +345,64 @@ export default function ContentToolsPage() {
 
                 <label className="block">
                   <FieldLabel>Padrão de legenda</FieldLabel>
-                  <Textarea value={captionPattern} onChange={setCaptionPattern} rows={8} placeholder="Cole aqui o padrão Lucas quando estiver definido." />
+                  <Textarea value={captionPattern} onChange={setCaptionPattern} rows={8} placeholder="Opcional: ajuste o padrão SEO. Se ficar vazio, o padrão Lucas enviado será usado." />
+                </label>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+                <label className="block">
+                  <FieldLabel>TikTok</FieldLabel>
+                  <input
+                    value={creatorProfile.tiktok}
+                    onChange={(event) => setCreatorProfile((current) => ({ ...current, tiktok: event.target.value }))}
+                    className="h-11 w-full rounded-[9px] border border-line bg-card-hi px-4 text-[14px] text-ink placeholder:text-ink-3 transition hover:border-line-hi focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/15"
+                    placeholder="/ seu.perfil"
+                  />
+                </label>
+                <label className="block">
+                  <FieldLabel>Instagram</FieldLabel>
+                  <input
+                    value={creatorProfile.instagram}
+                    onChange={(event) => setCreatorProfile((current) => ({ ...current, instagram: event.target.value }))}
+                    className="h-11 w-full rounded-[9px] border border-line bg-card-hi px-4 text-[14px] text-ink placeholder:text-ink-3 transition hover:border-line-hi focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/15"
+                    placeholder="/ seu.perfil"
+                  />
+                </label>
+                <label className="block">
+                  <FieldLabel>Twitter / X</FieldLabel>
+                  <input
+                    value={creatorProfile.x}
+                    onChange={(event) => setCreatorProfile((current) => ({ ...current, x: event.target.value }))}
+                    className="h-11 w-full rounded-[9px] border border-line bg-card-hi px-4 text-[14px] text-ink placeholder:text-ink-3 transition hover:border-line-hi focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/15"
+                    placeholder="https://x.com/..."
+                  />
+                </label>
+                <label className="block">
+                  <FieldLabel>Link principal</FieldLabel>
+                  <input
+                    value={creatorProfile.primaryLinkUrl}
+                    onChange={(event) => setCreatorProfile((current) => ({ ...current, primaryLinkUrl: event.target.value }))}
+                    className="h-11 w-full rounded-[9px] border border-line bg-card-hi px-4 text-[14px] text-ink placeholder:text-ink-3 transition hover:border-line-hi focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/15"
+                    placeholder="https://..."
+                  />
+                </label>
+                <label className="block">
+                  <FieldLabel>Nome do link</FieldLabel>
+                  <input
+                    value={creatorProfile.primaryLinkLabel}
+                    onChange={(event) => setCreatorProfile((current) => ({ ...current, primaryLinkLabel: event.target.value }))}
+                    className="h-11 w-full rounded-[9px] border border-line bg-card-hi px-4 text-[14px] text-ink placeholder:text-ink-3 transition hover:border-line-hi focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/15"
+                    placeholder="Link da ferramenta"
+                  />
+                </label>
+                <label className="block">
+                  <FieldLabel>Contato comercial</FieldLabel>
+                  <input
+                    value={creatorProfile.businessEmail}
+                    onChange={(event) => setCreatorProfile((current) => ({ ...current, businessEmail: event.target.value }))}
+                    className="h-11 w-full rounded-[9px] border border-line bg-card-hi px-4 text-[14px] text-ink placeholder:text-ink-3 transition hover:border-line-hi focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/15"
+                    placeholder="email@dominio.com"
+                  />
                 </label>
               </div>
 
@@ -340,6 +478,11 @@ export default function ContentToolsPage() {
               </h2>
               {captions.length ? (
                 <div className="space-y-3">
+                  {captionKeywords.length ? (
+                    <p className="rounded-[8px] border border-line bg-card-hi px-3 py-2 text-[12px] leading-5 text-ink-2">
+                      Keywords: {captionKeywords.slice(0, 10).join(", ")}
+                    </p>
+                  ) : null}
                   {captions.map((caption, index) => (
                     <article key={`${caption}-${index}`} className="rounded-[10px] border border-line bg-card-hi p-3">
                       <p className="whitespace-pre-wrap text-[12px] leading-5 text-ink-2">{caption}</p>

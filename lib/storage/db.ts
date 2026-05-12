@@ -2,7 +2,7 @@ import { readFile, writeFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
 import { join, resolve } from "path";
 
-export const DATA_DIR = resolve(process.cwd(), ".open-studio");
+export const DATA_DIR = resolve(process.env.OPEN_STUDIO_DATA_DIR || join(process.cwd(), ".open-studio"));
 const LEGACY_DATA_DIR = resolve(process.cwd(), "data");
 
 async function ensureDir(): Promise<void> {

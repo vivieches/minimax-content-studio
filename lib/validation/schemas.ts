@@ -14,6 +14,23 @@ const providerOverrideSchema = z.object({
   model: z.string().max(200).optional(),
 });
 
+const creatorProfileSchema = z.object({
+  tiktok: z.string().max(500).optional(),
+  instagram: z.string().max(500).optional(),
+  x: z.string().max(500).optional(),
+  businessEmail: z.string().max(500).optional(),
+  primaryLinkLabel: z.string().max(120).optional(),
+  primaryLinkUrl: z.string().max(1000).optional(),
+  language: z.enum(["auto", "pt-BR", "es", "en"]).optional().default("auto"),
+});
+const titleCandidateInputSchema = z.object({
+  title: z.string().min(1).max(500),
+  score: z.number().min(0).max(100).optional(),
+  reason: z.string().max(1000).optional(),
+  ctrAngle: z.string().max(500).optional(),
+  seoKeywords: z.array(z.string().max(120)).max(30).optional(),
+}).passthrough();
+
 const providerStoredConfigSchema = z.object({
   enabled: z.boolean().optional(),
   apiKey: z.string().max(1000).optional(),
@@ -44,14 +61,6 @@ const agentCliEnvSchema = z.preprocess(
   z.record(providerIdSchema, z.record(z.string().max(100), z.string().max(1000)))
 );
 
-const mediaProviderConfigSchema = z.object({
-  apiKey: z.string().max(1000).optional(),
-  baseUrl: z.string().url().max(500).or(z.literal("")).optional(),
-  model: z.string().max(200).optional(),
-  apiKeyTail: z.string().max(40).optional(),
-  apiKeyConfigured: z.boolean().optional(),
-});
-
 // ── Settings ──────────────────────────────────────────────────────────
 export const settingsSchema = z.object({
   action: z.enum(["reset", "clear_assets"]).optional(),
@@ -61,7 +70,6 @@ export const settingsSchema = z.object({
   agentId: z.string().max(100).nullable().optional(),
   agentModels: z.record(providerIdSchema, agentChoiceSchema).optional(),
   agentCliEnv: agentCliEnvSchema.optional(),
-  mediaProviders: z.record(providerIdSchema, mediaProviderConfigSchema).optional(),
   language: z.enum(["en", "pt", "es"]).optional(),
   // Legacy MiniMax settings are accepted for backward-compatible writes/tests.
   apiKey: z.string().max(500).optional(),
@@ -188,14 +196,41 @@ export const titleGenerateSchema = z.object({
   thumbnailConcept: z.string().optional(),
   outlierNotes: z.string().optional(),
   count: z.number().int().min(3).max(20).optional().default(10),
+  research: z.boolean().optional().default(false),
+  maxSources: z.number().int().min(1).max(20).optional().default(6),
+  projectId: z.string().max(200).optional(),
   provider: providerOverrideSchema.optional(),
   saveToAssets: z.boolean().optional().default(true),
 });
 
+export const researchSearchSchema = z.object({
+  query: z.string().min(1).max(4000),
+  maxSources: z.number().int().min(1).max(20).optional().default(6),
+  projectId: z.string().max(200).optional(),
+});
+
 export const captionGenerateSchema = z.object({
   script: z.string().min(1).max(12000),
-  pattern: z.string().max(4000).optional(),
+  topic: z.string().max(1000).optional(),
+  title: z.string().max(500).optional(),
+  pattern: z.string().max(6000).optional(),
+  creatorProfile: creatorProfileSchema.optional(),
+  projectId: z.string().max(200).optional(),
   provider: providerOverrideSchema.optional(),
+  saveToAssets: z.boolean().optional().default(true),
+});
+
+export const critiquePackageSchema = z.object({
+  title: z.string().max(500).optional(),
+  selectedTitle: z.string().max(500).optional(),
+  script: z.string().max(50000).optional(),
+  description: z.string().max(12000).optional(),
+  thumbnailPrompt: z.string().max(12000).optional(),
+  thumbnailText: z.string().max(500).optional(),
+  titleCandidates: z.array(titleCandidateInputSchema).max(30).optional(),
+  topTitleCandidates: z.array(titleCandidateInputSchema).max(10).optional(),
+  captions: z.array(z.string().max(12000)).max(10).optional(),
+  projectId: z.string().max(200).optional(),
   saveToAssets: z.boolean().optional().default(true),
 });
 
@@ -207,6 +242,9 @@ export const audioProviderGenerateSchema = musicGenerateSchema.extend({
 export const packageGenerateSchema = z.object({
   briefing: z.string().min(1).max(4000),
   steps: z.array(capabilitySchema).max(2).optional(),
+  research: z.boolean().optional().default(false),
+  maxSources: z.number().int().min(1).max(20).optional().default(6),
+  projectId: z.string().max(200).optional(),
   providers: z.object({
     text: providerOverrideSchema.optional(),
     image: providerOverrideSchema.optional(),

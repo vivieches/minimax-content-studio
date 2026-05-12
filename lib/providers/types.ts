@@ -1,3 +1,5 @@
+import type { Diagnostic } from "@/lib/daemon/diagnostics";
+
 export type ActiveProviderCapability = "text" | "image";
 export type LegacyProviderCapability = "audio" | "video";
 export type ProviderCapability = ActiveProviderCapability | LegacyProviderCapability;
@@ -63,6 +65,7 @@ export interface TextGenerationResult {
   providerId: string;
   model: string;
   raw?: unknown;
+  diagnostics?: Diagnostic[];
 }
 
 export interface ImageGenerationRequest {
@@ -82,6 +85,7 @@ export interface ImageGenerationResult {
   model: string;
   jobId?: string;
   raw?: unknown;
+  diagnostics?: Diagnostic[];
 }
 
 export interface AudioGenerationRequest {

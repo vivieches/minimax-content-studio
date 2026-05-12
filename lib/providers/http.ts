@@ -27,9 +27,9 @@ export function createBearerHeaders(config: ProviderRuntimeConfig): Record<strin
 export async function readError(response: Response): Promise<string> {
   try {
     const text = await response.text();
-    return text.slice(0, 800);
+    return `HTTP ${response.status} ${response.statusText}: ${text}`.slice(0, 800);
   } catch {
-    return response.statusText || "Unknown provider error";
+    return `HTTP ${response.status} ${response.statusText || "Unknown provider error"}`.trim();
   }
 }
 

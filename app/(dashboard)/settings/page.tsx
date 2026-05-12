@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  Bell,
-  Boxes,
   CheckCircle2,
   ChevronDown,
   Eye,
@@ -12,11 +10,9 @@ import {
   Image as ImageIcon,
   KeyRound,
   Languages,
-  Link2,
   Loader2,
   Lock,
   Palette,
-  PlugZap,
   RefreshCw,
   Save,
   ShieldCheck,
@@ -28,6 +24,15 @@ import {
   XCircle,
 } from "lucide-react";
 import type { ActiveProviderCapability, ProviderCapability, ProviderManifest, ProviderStoredConfig } from "@/lib/providers/types";
+
+type CatalogModel = {
+  id: string;
+  label: string;
+  capability: ProviderCapability;
+  source: "default" | "configured" | "manifest" | "discovered" | "cached";
+  isDefault: boolean;
+  isConfigured: boolean;
+};
 
 type SafeProviderConfig = Omit<ProviderStoredConfig, "apiKey"> & {
   apiKey: string;
@@ -52,25 +57,6 @@ type AgentInfo = {
   docsUrl?: string;
 };
 
-type MediaProvider = {
-  id: string;
-  label: string;
-  hint: string;
-  integrated: boolean;
-  credentialsRequired?: boolean;
-  defaultBaseUrl?: string;
-  docsUrl?: string;
-  supportsCustomModel?: boolean;
-};
-
-type MediaConfig = {
-  apiKey?: string;
-  baseUrl?: string;
-  model?: string;
-  apiKeyTail?: string;
-  apiKeyConfigured?: boolean;
-};
-
 interface AppSettings {
   providers: Record<string, SafeProviderConfig>;
   defaults: Record<ActiveProviderCapability, { providerId: string; model: string }>;
@@ -78,7 +64,6 @@ interface AppSettings {
   agentId: string | null;
   agentModels: Record<string, { model?: string; reasoning?: string }>;
   agentCliEnv: Record<string, Record<string, string>>;
-  mediaProviders: Record<string, MediaConfig>;
   demoMode: boolean;
   debugMode: boolean;
   exportDirectory: string;
@@ -90,14 +75,17 @@ interface ProviderResponseItem extends ProviderManifest {
   enabled: boolean;
   hasApiKey: boolean;
   configuredModels: Partial<Record<ProviderCapability, string>>;
+  modelsByCapability?: Partial<Record<ProviderCapability, CatalogModel[]>>;
+  integrationStatus?: "integrated" | "unsupported" | "hidden";
+  active?: boolean;
+  configured?: boolean;
 }
 
-type TestResult = { ok: boolean; models: string[]; error?: string };
-type SectionId = "execution" | "media" | "connectors" | "mcp" | "language" | "appearance" | "notifications" | "companions" | "library";
+type TestResult = { ok: boolean; models: string[]; modelsDetailed?: CatalogModel[]; error?: string; source?: string; stale?: boolean };
+type SectionId = "execution" | "language" | "appearance";
 type ByokTabId = "anthropic" | "openai" | "azure" | "gemini" | "local";
 
 const LOCAL_SETTINGS_KEY = "open-studio.provider-secrets.v1";
-const LOCAL_MEDIA_SETTINGS_KEY = "open-studio.media-provider-secrets.v1";
 const DEFAULT_MODEL = "default";
 
 const fieldBase =
@@ -110,14 +98,8 @@ const capabilityCards: Array<{ id: ActiveProviderCapability; title: string; icon
 
 const sectionItems: Array<{ id: SectionId; title: string; subtitle: string; icon: typeof SlidersHorizontal }> = [
   { id: "execution", title: "Modo de execução", subtitle: "CLI local / BYOK", icon: SlidersHorizontal },
-  { id: "media", title: "Provedores de mídia", subtitle: "Image / video / audio", icon: ImageIcon },
-  { id: "connectors", title: "Connectors", subtitle: "External system connections", icon: PlugZap },
-  { id: "mcp", title: "MCP server", subtitle: "Connect your coding agent", icon: Link2 },
   { id: "language", title: "Idioma", subtitle: "Salvo neste navegador", icon: Languages },
   { id: "appearance", title: "Aparência", subtitle: "Tema e superfície", icon: Palette },
-  { id: "notifications", title: "Notificações", subtitle: "Eventos de geração", icon: Bell },
-  { id: "companions", title: "Bichinhos", subtitle: "Personalização futura", icon: Sparkles },
-  { id: "library", title: "Habilidades e design", subtitle: "Skills e sistemas", icon: Boxes },
 ];
 
 const byokTabs: Array<{ id: ByokTabId; title: string; providerIds: string[] }> = [
@@ -153,7 +135,6 @@ const emptySettings = (): AppSettings => ({
   agentId: null,
   agentModels: {},
   agentCliEnv: {},
-  mediaProviders: {},
   demoMode: false,
   debugMode: false,
   exportDirectory: "",
@@ -199,24 +180,6 @@ function writeProviderSecrets(providers: AppSettings["providers"]) {
   window.localStorage.setItem(LOCAL_SETTINGS_KEY, JSON.stringify(next));
 }
 
-function writeMediaSecrets(mediaProviders: AppSettings["mediaProviders"]) {
-  if (typeof window === "undefined") return;
-  const current = readLocalRecord<MediaConfig>(LOCAL_MEDIA_SETTINGS_KEY);
-  const next: Record<string, Partial<MediaConfig>> = { ...current };
-
-  for (const [providerId, config] of Object.entries(mediaProviders)) {
-    next[providerId] = {
-      ...next[providerId],
-      baseUrl: config.baseUrl,
-      model: config.model,
-      apiKey: config.apiKey?.trim() || next[providerId]?.apiKey || "",
-    };
-    if (next[providerId].apiKey) next[providerId].apiKeyTail = keyTail(String(next[providerId].apiKey));
-  }
-
-  window.localStorage.setItem(LOCAL_MEDIA_SETTINGS_KEY, JSON.stringify(next));
-}
-
 function providerNeedsKey(provider: Pick<ProviderResponseItem, "authHeader"> | undefined) {
   return provider?.authHeader !== "none";
 }
@@ -225,15 +188,12 @@ function hasProviderKey(config: SafeProviderConfig | undefined) {
   return Boolean(config?.hasApiKey) || Boolean(config?.apiKey?.trim());
 }
 
-function hasMediaKey(config: MediaConfig | undefined) {
-  return Boolean(config?.apiKeyConfigured) || Boolean(config?.apiKey?.trim());
-}
-
 function getModelOptions(provider: ProviderResponseItem | undefined, capability: ProviderCapability, current?: string) {
   const configured = provider?.configuredModels?.[capability];
   const fallback = provider?.defaultModels?.[capability] ?? "";
+  const catalog = provider?.modelsByCapability?.[capability]?.map((model) => model.id) ?? [];
   const options = provider?.modelOptions?.[capability] ?? [];
-  return Array.from(new Set([current, configured, ...options, fallback].filter((value): value is string => Boolean(value))));
+  return Array.from(new Set([current, configured, ...catalog, ...options, fallback].filter((value): value is string => Boolean(value))));
 }
 
 function providerConfigFor(provider: ProviderResponseItem, settings: AppSettings): SafeProviderConfig {
@@ -247,6 +207,10 @@ function providerConfigFor(provider: ProviderResponseItem, settings: AppSettings
       extra: { ...provider.extraDefaults },
     }
   );
+}
+
+function primaryCapability(provider: ProviderResponseItem | undefined): ActiveProviderCapability {
+  return provider?.capabilities.includes("text") ? "text" : "image";
 }
 
 function SelectField({
@@ -284,21 +248,6 @@ function Toggle({ enabled, onClick, label }: { enabled: boolean; onClick: () => 
     >
       <span className={cx("absolute top-1 h-5 w-5 rounded-full bg-ink shadow-sm transition-all duration-200", enabled ? "left-6" : "left-1")} />
     </button>
-  );
-}
-
-function StatusPill({ kind, children }: { kind: "ok" | "muted" | "warn"; children: ReactNode }) {
-  return (
-    <span
-      className={cx(
-        "inline-flex items-center gap-1 rounded-[7px] border px-2 py-0.5 text-[10px] font-medium",
-        kind === "ok" && "border-ok/15 bg-ok-soft text-ok",
-        kind === "warn" && "border-accent/20 bg-accent/8 text-accent",
-        kind === "muted" && "border-line bg-card-hi text-ink-3",
-      )}
-    >
-      {children}
-    </span>
   );
 }
 
@@ -375,7 +324,6 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings>(() => emptySettings());
   const [providers, setProviders] = useState<ProviderResponseItem[]>([]);
   const [agents, setAgents] = useState<AgentInfo[]>([]);
-  const [mediaProviders, setMediaProviders] = useState<MediaProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [agentLoading, setAgentLoading] = useState(false);
@@ -384,7 +332,6 @@ export default function SettingsPage() {
   const [activeByokTab, setActiveByokTab] = useState<ByokTabId>("anthropic");
   const [selectedByokProviderId, setSelectedByokProviderId] = useState("anthropic");
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
-  const [showMediaKeys, setShowMediaKeys] = useState<Record<string, boolean>>({});
   const [testing, setTesting] = useState<Record<string, boolean>>({});
   const [agentTest, setAgentTest] = useState<{ ok: boolean; message: string } | null>(null);
   const [agentScanNotice, setAgentScanNotice] = useState<string>("");
@@ -428,19 +375,16 @@ export default function SettingsPage() {
 
   async function loadData() {
     try {
-      const [settingsRes, providersRes, mediaRes] = await Promise.all([
+      const [settingsRes, providersRes] = await Promise.all([
         fetch("/api/settings"),
         fetch("/api/providers"),
-        fetch("/api/media/models"),
       ]);
-      const [settingsData, providersData, mediaData] = await Promise.all([settingsRes.json(), providersRes.json(), mediaRes.json()]);
+      const [settingsData, providersData] = await Promise.all([settingsRes.json(), providersRes.json()]);
 
       if (providersData.ok) setProviders(providersData.providers);
-      if (mediaData.ok) setMediaProviders(mediaData.providers);
       if (settingsData.ok) {
         const nextSettings = settingsData.settings as AppSettings;
         const localProviderSecrets = readLocalRecord<SafeProviderConfig>(LOCAL_SETTINGS_KEY);
-        const localMediaSecrets = readLocalRecord<MediaConfig>(LOCAL_MEDIA_SETTINGS_KEY);
         const providersWithKeys = Object.fromEntries(
           Object.entries(nextSettings.providers).map(([providerId, config]) => {
             const local = localProviderSecrets[providerId] ?? {};
@@ -459,24 +403,7 @@ export default function SettingsPage() {
             ];
           }),
         );
-        const mediaWithKeys = Object.fromEntries(
-          Object.entries(nextSettings.mediaProviders ?? {}).map(([providerId, config]) => {
-            const local = localMediaSecrets[providerId] ?? {};
-            const localKey = typeof local.apiKey === "string" ? local.apiKey : "";
-            return [
-              providerId,
-              {
-                ...config,
-                ...local,
-                apiKey: localKey,
-                apiKeyConfigured: Boolean(localKey) || Boolean(config.apiKeyConfigured),
-                apiKeyTail: localKey ? keyTail(localKey) : config.apiKeyTail,
-              },
-            ];
-          }),
-        );
-
-        setSettings({ ...emptySettings(), ...nextSettings, providers: providersWithKeys, mediaProviders: mediaWithKeys });
+        setSettings({ ...emptySettings(), ...nextSettings, providers: providersWithKeys });
       }
       await loadAgents();
     } finally {
@@ -510,18 +437,61 @@ export default function SettingsPage() {
     });
   }
 
-  function updateMediaProvider(providerId: string, partial: Partial<MediaConfig>) {
+  function mergeProviderModels(providerId: string, capability: ActiveProviderCapability, models: string[], detailed?: CatalogModel[]) {
+    if (!models.length && !detailed?.length) return;
+    setProviders((current) =>
+      current.map((provider) => {
+        if (provider.id !== providerId) return provider;
+        const currentModels = provider.modelsByCapability?.[capability] ?? [];
+        const incoming =
+          detailed?.length
+            ? detailed
+            : models.map((model) => ({
+                id: model,
+                label: model,
+                capability,
+                source: "discovered" as const,
+                isDefault: model === provider.defaultModels[capability],
+                isConfigured: model === settings.providers[providerId]?.models?.[capability],
+              }));
+        const merged = new Map<string, CatalogModel>();
+        for (const model of [...currentModels, ...incoming]) merged.set(model.id, model);
+        return {
+          ...provider,
+          modelOptions: {
+            ...provider.modelOptions,
+            [capability]: Array.from(merged.keys()),
+          },
+          modelsByCapability: {
+            ...provider.modelsByCapability,
+            [capability]: Array.from(merged.values()),
+          },
+        };
+      })
+    );
+  }
+
+  async function saveSettingsPatch(partial: Partial<AppSettings>, successMessage: string) {
+    setSaving(true);
     setStatus("");
-    setSettings((current) => ({
-      ...current,
-      mediaProviders: {
-        ...current.mediaProviders,
-        [providerId]: {
-          ...current.mediaProviders[providerId],
-          ...partial,
-        },
-      },
-    }));
+    try {
+      writeProviderSecrets(settings.providers);
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(partial),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "Failed to save settings");
+      setStatus(successMessage);
+      setTimeout(() => setStatus(""), 2200);
+      return true;
+    } catch {
+      setStatus("Não consegui salvar a seleção. Revise as configurações e tente de novo.");
+      return false;
+    } finally {
+      setSaving(false);
+    }
   }
 
   function updateDefault(capability: ActiveProviderCapability, providerId: string, model?: string) {
@@ -532,25 +502,46 @@ export default function SettingsPage() {
       settings.providers[providerId]?.models?.[capability] ??
       manifest?.defaultModels[capability] ??
       "";
+    const defaults = {
+      ...settings.defaults,
+      [capability]: { providerId, model: configuredModel },
+    };
+    const providerConfig = settings.providers[providerId];
 
     setSettings((current) => ({
       ...current,
-      defaults: {
-        ...current.defaults,
-        [capability]: { providerId, model: configuredModel },
-      },
+      defaults,
     }));
+    void saveSettingsPatch(
+      {
+        defaults,
+        providers: providerConfig ? { [providerId]: providerConfig } as AppSettings["providers"] : undefined,
+      },
+      "Padrões de geração salvos."
+    );
+  }
+
+  function selectExecutionMode(executionMode: AppSettings["executionMode"]) {
+    setSettings((current) => ({ ...current, executionMode }));
+    void saveSettingsPatch({ executionMode }, "Modo de execução salvo.");
+  }
+
+  function selectAgent(agentId: string) {
+    setSettings((current) => ({ ...current, agentId }));
+    void saveSettingsPatch({ agentId }, "CLI local salva.");
   }
 
   function updateAgentChoice(agentId: string, partial: { model?: string; reasoning?: string }) {
     setStatus("");
+    const agentModels = {
+      ...settings.agentModels,
+      [agentId]: { ...settings.agentModels[agentId], ...partial },
+    };
     setSettings((current) => ({
       ...current,
-      agentModels: {
-        ...current.agentModels,
-        [agentId]: { ...current.agentModels[agentId], ...partial },
-      },
+      agentModels,
     }));
+    void saveSettingsPatch({ agentModels }, "Configuração do agente salva.");
   }
 
   function updateAgentEnv(agentId: string, envKey: string, value: string) {
@@ -578,7 +569,6 @@ export default function SettingsPage() {
     setStatus("");
     try {
       writeProviderSecrets(settings.providers);
-      writeMediaSecrets(settings.mediaProviders);
       const res = await fetch("/api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -626,11 +616,9 @@ export default function SettingsPage() {
       });
       const data = await res.json();
       setTestResults((current) => ({ ...current, [providerId]: data }));
-      if (data.ok && Array.isArray(data.models) && data.models.length && provider) {
-        const firstModel = data.models[0];
-        updateProvider(providerId, {
-          models: Object.fromEntries(provider.capabilities.map((capability) => [capability, firstModel])),
-        });
+      if (Array.isArray(data.models) && data.models.length && provider) {
+        const capability = primaryCapability(provider);
+        mergeProviderModels(providerId, capability, data.models, data.modelsDetailed);
       }
     } catch {
       setTestResults((current) => ({
@@ -664,14 +652,12 @@ export default function SettingsPage() {
       setTestResults((current) => ({
         ...current,
         [providerId]: data.ok
-          ? { ok: true, models: data.models ?? [] }
+          ? { ok: true, models: data.models ?? [], modelsDetailed: data.modelsDetailed, source: data.source, stale: data.stale }
           : { ok: false, models: [], error: data.error || "Não consegui buscar modelos." },
       }));
-      if (data.ok && provider && Array.isArray(data.models) && data.models.length) {
-        const firstModel = data.models[0];
-        updateProvider(providerId, {
-          models: Object.fromEntries(provider.capabilities.map((capability) => [capability, firstModel])),
-        });
+      if (provider && Array.isArray(data.models) && data.models.length) {
+        const capability = primaryCapability(provider);
+        mergeProviderModels(providerId, capability, data.models, data.modelsDetailed);
       }
     } catch {
       setTestResults((current) => ({
@@ -721,8 +707,8 @@ export default function SettingsPage() {
   function renderExecutionSection() {
     const provider = selectedByokProvider;
     const config = selectedByokConfig;
-    const models = provider ? getModelOptions(provider, provider.capabilities.includes("text") ? "text" : "image", config?.models?.text || config?.models?.image) : [];
-    const modelCapability: ActiveProviderCapability = provider?.capabilities.includes("text") ? "text" : "image";
+    const modelCapability = primaryCapability(provider);
+    const models = provider ? getModelOptions(provider, modelCapability, config?.models?.[modelCapability]) : [];
     const testResult = provider ? testResults[provider.id] : undefined;
 
     return (
@@ -731,7 +717,7 @@ export default function SettingsPage() {
           <button
             type="button"
             aria-pressed={settings.executionMode === "cli"}
-            onClick={() => setSettings((current) => ({ ...current, executionMode: "cli" }))}
+            onClick={() => selectExecutionMode("cli")}
             className={cx(
               "rounded-[12px] border px-5 py-4 text-left transition",
               settings.executionMode === "cli" ? "border-accent/45 bg-accent/[0.08] text-ink" : "border-transparent bg-card-hi text-ink-2 hover:border-line-hi",
@@ -743,7 +729,7 @@ export default function SettingsPage() {
           <button
             type="button"
             aria-pressed={settings.executionMode === "byok"}
-            onClick={() => setSettings((current) => ({ ...current, executionMode: "byok" }))}
+            onClick={() => selectExecutionMode("byok")}
             className={cx(
               "rounded-[12px] border px-5 py-4 text-left transition",
               settings.executionMode === "byok" ? "border-accent/45 bg-accent/[0.08] text-ink" : "border-transparent bg-card-hi text-ink-2 hover:border-line-hi",
@@ -803,7 +789,7 @@ export default function SettingsPage() {
                     key={agent.id}
                     type="button"
                     aria-pressed={active}
-                    onClick={() => setSettings((current) => ({ ...current, agentId: agent.id }))}
+                    onClick={() => selectAgent(agent.id)}
                     className={cx(
                       "flex min-h-[62px] items-center gap-3 rounded-[10px] border p-3 text-left transition",
                       active ? "border-accent/55 bg-accent/[0.07]" : "border-line bg-card-hi hover:border-line-hi",
@@ -1054,108 +1040,6 @@ export default function SettingsPage() {
     );
   }
 
-  function renderMediaSection() {
-    const visible = mediaProviders.slice().sort((a, b) => {
-      const configuredA = hasMediaKey(settings.mediaProviders[a.id]);
-      const configuredB = hasMediaKey(settings.mediaProviders[b.id]);
-      if (configuredA !== configuredB) return configuredA ? -1 : 1;
-      if (a.integrated !== b.integrated) return a.integrated ? -1 : 1;
-      return a.label.localeCompare(b.label);
-    });
-
-    return (
-      <section className="rounded-[16px] border border-line bg-card p-5 shadow-[0_18px_48px_rgba(0,0,0,0.16)]">
-        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h2 className="text-[18px] font-semibold text-ink">Provedores de mídia</h2>
-            <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-ink-2">
-              O catálogo fica visível para planejamento. Geração ativa no Open Studio continua limitada a texto e imagem.
-            </p>
-          </div>
-          <button type="button" onClick={() => void handleSave()} disabled={saving} className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] btn-brand px-5 text-[13px] font-semibold disabled:opacity-50">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Salvar mídia
-          </button>
-        </div>
-
-        <div className="space-y-3">
-          {visible.map((provider) => {
-            const config = settings.mediaProviders[provider.id] ?? {};
-            const disabled = !provider.integrated;
-            const showKey = showMediaKeys[provider.id];
-            const configured = hasMediaKey(config);
-            return (
-              <section key={provider.id} className={cx("rounded-[12px] border p-4", provider.integrated ? "border-line bg-card-hi" : "border-line border-dashed bg-white/[0.015] opacity-70")}>
-                <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-[15px] font-semibold text-ink">{provider.label}</h3>
-                      <StatusPill kind={provider.integrated ? "ok" : "muted"}>{provider.integrated ? "Integrated" : "Unsupported"}</StatusPill>
-                      {configured ? <StatusPill kind="ok">key salva</StatusPill> : null}
-                    </div>
-                    <p className="mt-1 text-[12px] text-ink-2">{provider.hint}</p>
-                  </div>
-                  {provider.docsUrl ? (
-                    <a href={provider.docsUrl} target="_blank" rel="noreferrer" className="text-[12px] font-medium text-accent hover:text-accent-hi">
-                      Docs
-                    </a>
-                  ) : null}
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_1fr_88px]">
-                  <div className="relative">
-                    <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
-                    <input
-                      type={showKey ? "text" : "password"}
-                      value={config.apiKey ?? ""}
-                      onChange={(event) => updateMediaProvider(provider.id, { apiKey: event.target.value })}
-                      placeholder={configured ? `salva localmente${config.apiKeyTail ? ` ...${config.apiKeyTail}` : ""}` : "Cole a API key"}
-                      disabled={disabled || provider.credentialsRequired === false}
-                      className={cx(fieldBase, "pl-10 pr-11")}
-                    />
-                    <button
-                      type="button"
-                      disabled={disabled || provider.credentialsRequired === false}
-                      onClick={() => setShowMediaKeys((current) => ({ ...current, [provider.id]: !current[provider.id] }))}
-                      className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-[8px] border border-line text-ink-3 transition hover:bg-hover hover:text-ink disabled:opacity-40"
-                      aria-label={showKey ? "Ocultar chave" : "Mostrar chave"}
-                    >
-                      {showKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                    </button>
-                  </div>
-                  <input
-                    value={config.baseUrl ?? ""}
-                    onChange={(event) => updateMediaProvider(provider.id, { baseUrl: event.target.value })}
-                    placeholder={provider.defaultBaseUrl || "Sobrescrever Base URL padrão"}
-                    disabled={disabled}
-                    className={fieldBase}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => updateMediaProvider(provider.id, { apiKey: "", baseUrl: "", model: "" })}
-                    disabled={disabled && !configured}
-                    className="h-11 rounded-[10px] border border-line bg-white/[0.025] px-3 text-[13px] font-medium text-ink-2 transition hover:bg-hover hover:text-ink disabled:opacity-45"
-                  >
-                    Limpar
-                  </button>
-                </div>
-                {provider.supportsCustomModel ? (
-                  <input
-                    value={config.model ?? ""}
-                    onChange={(event) => updateMediaProvider(provider.id, { model: event.target.value })}
-                    placeholder="Modelo customizado"
-                    disabled={disabled}
-                    className={cx(fieldBase, "mt-3")}
-                  />
-                ) : null}
-              </section>
-            );
-          })}
-        </div>
-      </section>
-    );
-  }
-
   if (loading) {
     return (
       <main className="relative flex flex-1 items-center justify-center overflow-y-auto">
@@ -1188,7 +1072,7 @@ export default function SettingsPage() {
         </section>
 
         {status ? (
-          <div className={cx("mb-5 rounded-[12px] border px-4 py-3 text-[13px]", status.includes("salvas") ? "border-ok/20 bg-ok-soft text-ok" : "border-danger/20 bg-danger-soft text-danger")}>
+          <div className={cx("mb-5 rounded-[12px] border px-4 py-3 text-[13px]", status.includes("salv") ? "border-ok/20 bg-ok-soft text-ok" : "border-danger/20 bg-danger-soft text-danger")}>
             {status}
           </div>
         ) : null}
@@ -1219,27 +1103,11 @@ export default function SettingsPage() {
 
           <div className="min-w-0">
             {activeSection === "execution" ? renderExecutionSection() : null}
-            {activeSection === "media" ? renderMediaSection() : null}
-            {activeSection === "connectors" ? (
-              <PlaceholderSection title="Connectors" body="Superfície registrada para conectar fontes externas e automações. A implementação real precisa mapear quais conectores entram no pacote de conteúdo antes de habilitar ações." />
-            ) : null}
-            {activeSection === "mcp" ? (
-              <PlaceholderSection title="MCP server" body="Área reservada para expor e consumir ferramentas MCP locais. O daemon já é o ponto certo para concentrar permissões, discovery e execução." />
-            ) : null}
             {activeSection === "language" ? (
               <PlaceholderSection title="Idioma" body="Preferência atual salva no settings local. A próxima etapa é ligar i18n real para evitar mistura de português, espanhol e inglês nas rotas." />
             ) : null}
             {activeSection === "appearance" ? (
               <PlaceholderSection title="Aparência" body="Tema escuro segue como padrão de produto. Controles finos de tema ficam registrados aqui, mas não devem mexer no visual principal sem revisão de design." />
-            ) : null}
-            {activeSection === "notifications" ? (
-              <PlaceholderSection title="Notificações" body="Eventos de geração, conexão e export vão usar esta área. Por enquanto a UI evita prometer notificações que ainda não disparam." />
-            ) : null}
-            {activeSection === "companions" ? (
-              <PlaceholderSection title="Bichinhos" body="Registrado como paridade de OpenDesign. No Open Studio só deve entrar se ajudar o fluxo de criação, não como decoração solta." />
-            ) : null}
-            {activeSection === "library" ? (
-              <PlaceholderSection title="Habilidades e sistemas de design" body="Entrada reservada para skills, padrões de legenda e sistemas de design que vão alimentar scripts, títulos, thumbnails e pacotes." />
             ) : null}
           </div>
         </div>

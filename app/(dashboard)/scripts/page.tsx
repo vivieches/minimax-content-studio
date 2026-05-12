@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Bell,
   Check,
@@ -29,6 +29,13 @@ type ReferenceItem = {
   id: string;
   title: string;
   content: string;
+  type?: "link" | "text";
+};
+
+type Diagnostic = {
+  severity?: "info" | "warning" | "error";
+  message: string;
+  action?: string;
 };
 
 const INITIAL_INSTRUCTIONS =
@@ -204,6 +211,29 @@ export default function ScriptGeneratorPage() {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    async function loadBrandKit() {
+      try {
+        const response = await fetch("/api/brand-kit");
+        const data = await response.json();
+        if (!data?.ok || !data.brandKit) return;
+        if (typeof data.brandKit.brandVoice === "string") setBrandVoice(data.brandKit.brandVoice);
+        if (Array.isArray(data.brandKit.references)) {
+          setReferences(data.brandKit.references.map((reference: ReferenceItem) => ({
+            id: reference.id,
+            title: reference.title,
+            content: reference.content,
+            type: reference.type,
+          })));
+        }
+      } catch {
+        // Brand kit is a convenience layer; script generation still works without it.
+      }
+    }
+
+    void loadBrandKit();
+  }, []);
+
   const resultText = useMemo(() => {
     if (!result) return "";
     return result
@@ -231,6 +261,24 @@ export default function ScriptGeneratorPage() {
       .replaceAll("{{DURACION}}", duration || "duración no definida");
   }
 
+  async function saveBrandKit(patch: Record<string, unknown>) {
+    const response = await fetch("/api/brand-kit", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    const data = await response.json();
+    if (!data?.ok) throw new Error(data?.error || "No se pudo guardar la voz de marca.");
+    if (Array.isArray(data.brandKit?.references)) {
+      setReferences(data.brandKit.references.map((reference: ReferenceItem) => ({
+        id: reference.id,
+        title: reference.title,
+        content: reference.content,
+        type: reference.type,
+      })));
+    }
+  }
+
   function createReferenceId() {
     return typeof crypto !== "undefined" && "randomUUID" in crypto
       ? crypto.randomUUID()
@@ -246,6 +294,7 @@ export default function ScriptGeneratorPage() {
     setLoading(true);
     setError("");
     try {
+      await saveBrandKit({ brandVoice, references });
       const briefing = [
         `OBJETIVO: ${objective}`,
         `TEMA: ${topic}`,
@@ -278,7 +327,14 @@ export default function ScriptGeneratorPage() {
           body: String(script),
         },
       ]);
-      showNotice("Guion generado");
+      void fetch("/api/memory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ extractFrom: `${brandVoice}\n${resolveVariables(instructions)}` }),
+      }).catch(() => undefined);
+      const diagnostics = Array.isArray(data?.diagnostics) ? (data.diagnostics as Diagnostic[]) : [];
+      const visibleDiagnostic = diagnostics.find((diagnostic) => diagnostic.severity !== "info");
+      showNotice(visibleDiagnostic ? [visibleDiagnostic.message, visibleDiagnostic.action].filter(Boolean).join(" ") : "Guion generado");
     } catch (generateError) {
       setError(generateError instanceof Error ? generateError.message : "No se pudo generar el guion.");
     } finally {
@@ -341,24 +397,49 @@ export default function ScriptGeneratorPage() {
   }
 
   function addReference() {
+    void addReferenceAsync();
+  }
+
+  async function addReferenceAsync() {
     const content = window.prompt("Pega un link, nota o fragmento de guion para usar como referencia.");
     if (!content?.trim()) return;
     const trimmed = content.trim();
     const isUrl = /^https?:\/\//i.test(trimmed);
     const title = isUrl ? trimmed : `Referencia ${references.length + 1}`;
-    setReferences((current) => [
-      ...current,
-      {
-        id: createReferenceId(),
-        title,
-        content: trimmed,
-      },
-    ]);
-    showNotice("Referencia agregada");
+    try {
+      const response = await fetch("/api/brand-kit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: createReferenceId(),
+          title,
+          content: trimmed,
+          type: isUrl ? "link" : "text",
+        }),
+      });
+      const data = await response.json();
+      if (!data?.ok) throw new Error(data?.error || "No se pudo agregar la referencia.");
+      setReferences(data.brandKit.references);
+      showNotice("Referencia agregada");
+    } catch (referenceError) {
+      setError(referenceError instanceof Error ? referenceError.message : "No se pudo agregar la referencia.");
+    }
   }
 
   function removeReference(referenceId: string) {
-    setReferences((current) => current.filter((reference) => reference.id !== referenceId));
+    void removeReferenceAsync(referenceId);
+  }
+
+  async function removeReferenceAsync(referenceId: string) {
+    try {
+      const response = await fetch(`/api/brand-kit?id=${encodeURIComponent(referenceId)}`, { method: "DELETE" });
+      const data = await response.json();
+      if (!data?.ok) throw new Error(data?.error || "No se pudo quitar la referencia.");
+      setReferences(data.brandKit.references);
+      showNotice("Referencia removida");
+    } catch (referenceError) {
+      setError(referenceError instanceof Error ? referenceError.message : "No se pudo quitar la referencia.");
+    }
   }
 
   return (
@@ -629,7 +710,14 @@ export default function ScriptGeneratorPage() {
               )}
               <button
                 type="button"
-                onClick={() => setEditingBrandVoice((current) => !current)}
+                onClick={() => {
+                  if (editingBrandVoice) {
+                    void saveBrandKit({ brandVoice, references })
+                      .then(() => showNotice("Voz de marca guardada"))
+                      .catch((saveError) => setError(saveError instanceof Error ? saveError.message : "No se pudo guardar."));
+                  }
+                  setEditingBrandVoice((current) => !current);
+                }}
                 className="mt-5 inline-flex items-center gap-2 text-[13px] font-semibold text-accent transition hover:text-accent-hi"
               >
                 {editingBrandVoice ? "Cerrar edición" : "Editar voz de marca"}

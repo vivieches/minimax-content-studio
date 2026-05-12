@@ -3,6 +3,15 @@ import { existsSync, readdirSync } from "fs";
 import os from "os";
 import path from "path";
 import { promisify } from "util";
+import { capabilitiesForAgent } from "../../daemon/runtimes/capabilities";
+import { preparePromptInput } from "../../daemon/runtimes/invocation";
+import {
+  collectTextFromEvents,
+  createRuntimeParser,
+  firstErrorFromEvents,
+  parseRuntimeOutput,
+} from "../../daemon/runtimes/parsers";
+import type { NormalizedRuntimeEvent, RuntimeCapabilityMap } from "../../daemon/runtimes/types";
 import { agentCliEnvForAgent, AGENT_BIN_ENV_KEYS, type AgentCliEnv } from "./agentConfig";
 
 const execFileAsync = promisify(execFile);
@@ -52,6 +61,7 @@ export interface AgentInfo extends Omit<AgentDefinition, "buildArgs"> {
   pathSource?: AgentPathSource;
   commandPreview: string[];
   models: AgentModelOption[];
+  capabilities: RuntimeCapabilityMap;
 }
 
 export type AgentPathSource = "configured" | "env" | "path" | "well_known" | "fallback";
@@ -138,17 +148,28 @@ export const AGENT_DEFS: AgentDefinition[] = [
     streamFormat: "json-event-stream",
     installUrl: "https://github.com/openai/codex",
     docsUrl: "https://developers.openai.com/codex",
-    buildArgs: ({ model, reasoning }) => [
-      "exec",
-      "--json",
-      "--skip-git-repo-check",
-      "--sandbox",
-      "workspace-write",
-      "-c",
-      "sandbox_workspace_write.network_access=true",
-      ...(model && model !== DEFAULT_AGENT_MODEL ? ["--model", model] : []),
-      ...(reasoning && reasoning !== DEFAULT_AGENT_MODEL ? ["-c", `model_reasoning_effort="${reasoning}"`] : []),
-    ],
+    buildArgs: ({ model, reasoning }) => {
+      const args = [
+        "exec",
+        "--json",
+        "--skip-git-repo-check",
+        "--sandbox",
+        "workspace-write",
+        "--ephemeral",
+        "-c",
+        "sandbox_workspace_write.network_access=true",
+      ];
+      if (process.env.OS_CODEX_DISABLE_PLUGINS !== "0") {
+        args.push("--disable", "plugins");
+      }
+      if (model && model !== DEFAULT_AGENT_MODEL) {
+        args.push("--model", model);
+      }
+      if (reasoning && reasoning !== DEFAULT_AGENT_MODEL) {
+        args.push("-c", `model_reasoning_effort="${reasoning}"`);
+      }
+      return args;
+    },
   },
   {
     id: "devin",
@@ -626,6 +647,7 @@ export async function listAgents(agentCliEnv?: AgentCliEnv, options: AgentResolv
         path: resolved?.bin,
         pathSource: resolved?.source,
         models: modelList(agent.fallbackModels),
+        capabilities: capabilitiesForAgent(agent),
         commandPreview: [
           previewBin,
           ...buildArgs({
@@ -659,8 +681,21 @@ export interface AgentTestResult {
   agentName: string;
 }
 
+export interface AgentTextInput {
+  agentId: string;
+  prompt: string;
+  model?: string;
+  reasoning?: string;
+  agentCliEnv?: AgentCliEnv;
+  timeoutMs?: number;
+  onEvent?: (event: NormalizedRuntimeEvent) => void | Promise<void>;
+}
+
 function looksLikeModelError(value: string): boolean {
-  return /model|deployment/i.test(value) && /not found|unknown|invalid|404/i.test(value);
+  return (
+    /model|deployment/i.test(value) &&
+    /not found|unknown|invalid|404|requires a newer version|not supported|no access|does not support/i.test(value)
+  );
 }
 
 function testInput(input: string | AgentTestInput): AgentTestInput {
@@ -737,7 +772,7 @@ export async function testAgent(input: string | AgentTestInput): Promise<AgentTe
         finish({ ok: true, kind: "success" });
         return;
       }
-      const error = (stderr || stdout || `${def.name} exited with code ${code}`).trim().slice(0, 500);
+      const error = (extractAgentError(stdout) || stderr || stdout || `${def.name} exited with code ${code}`).trim().slice(0, 500);
       finish({ ok: false, kind: looksLikeModelError(error) ? "not_found_model" : "agent_spawn_failed", error });
     });
 
@@ -756,4 +791,128 @@ export async function testAgent(input: string | AgentTestInput): Promise<AgentTe
     model,
     agentName: def.name,
   };
+}
+
+export function extractAgentText(stdout: string): string {
+  const text = collectTextFromEvents(parseRuntimeOutput("codex", "json-event-stream", stdout));
+  if (text) return text;
+
+  const cleaned = stdout
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("{"))
+    .join("\n")
+    .trim();
+
+  return cleaned || stdout.trim();
+}
+
+export function extractAgentError(stdout: string): string {
+  return firstErrorFromEvents(parseRuntimeOutput("codex", "json-event-stream", stdout))?.message.slice(0, 1200) ?? "";
+}
+
+export async function runAgentText(input: AgentTextInput): Promise<{ content: string; agentName: string; model: string }> {
+  const def = AGENT_DEFS.find((item) => item.id === input.agentId);
+  if (!def) throw new Error(`Unknown agent "${input.agentId}".`);
+
+  const model = input.model?.trim() || DEFAULT_AGENT_MODEL;
+  const reasoning = input.reasoning?.trim() || DEFAULT_AGENT_MODEL;
+  const configuredAgentEnv = agentCliEnvForAgent(input.agentCliEnv, input.agentId);
+  const resolved = resolveAgentExecutable(def, configuredAgentEnv);
+  if (!resolved) {
+    throw new Error(`${def.name} CLI não foi encontrada no PATH nem nos diretórios locais de toolchain.`);
+  }
+
+  const args = def.buildArgs({
+    model,
+    reasoning,
+    permissionMode: def.permissionMode,
+    prompt: input.prompt,
+  });
+
+  const env = {
+    ...process.env,
+    OS_NODE_BIN: process.execPath,
+    OS_BIN: path.join(process.cwd(), "scripts", "open-studio.mjs"),
+    OS_DAEMON_URL: process.env.OS_DAEMON_URL || process.env.OPEN_STUDIO_DAEMON_URL || "http://127.0.0.1:3000",
+    OS_PROJECT_ID: process.env.OS_PROJECT_ID || "default",
+    OS_PROJECT_DIR: process.cwd(),
+    ...def.env,
+    ...configuredAgentEnv,
+  };
+  const promptInput = await preparePromptInput({
+    prompt: input.prompt,
+    args,
+    promptViaStdin: def.promptViaStdin,
+  });
+  const invocation = createAgentCommandInvocation(resolved.bin, promptInput.args, env);
+
+  const events: NormalizedRuntimeEvent[] = [];
+  const parser = createRuntimeParser(def.id, def.streamFormat, (event) => {
+    events.push(event);
+    void input.onEvent?.(event);
+  });
+
+  const output = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+    const child = spawn(invocation.command, invocation.args, {
+      env,
+      stdio: ["pipe", "pipe", "pipe"],
+      windowsHide: true,
+      windowsVerbatimArguments: invocation.windowsVerbatimArguments,
+    });
+
+    let stdout = "";
+    let stderr = "";
+    let settled = false;
+    const finish = (error?: Error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (error) reject(error);
+      else resolve({ stdout, stderr });
+    };
+    const timer = setTimeout(() => {
+      child.kill();
+      finish(new Error(`${def.name} demorou demais para responder.`));
+    }, input.timeoutMs ?? 120_000);
+
+    child.stdout.on("data", (chunk) => {
+      const text = String(chunk);
+      stdout += text.slice(0, 1_000_000);
+      parser.feed(text);
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += String(chunk).slice(0, 120_000);
+    });
+    child.on("error", (error) => finish(error));
+    child.on("close", (code) => {
+      parser.flush();
+      if (code === 0) {
+        finish();
+        return;
+      }
+      const detail = (
+        firstErrorFromEvents(events)?.message ||
+        extractAgentError(stdout) ||
+        stderr ||
+        stdout ||
+        `${def.name} exited with code ${code}`
+      )
+        .trim()
+        .slice(0, 1200);
+      finish(new Error(detail));
+    });
+
+    if (promptInput.mode === "stdin") {
+      child.stdin.write(promptInput.stdin);
+      child.stdin.end();
+    }
+  });
+
+  const content = collectTextFromEvents(events) || extractAgentText(output.stdout);
+  if (!content) {
+    throw new Error((output.stderr || `${def.name} não retornou texto.`).trim().slice(0, 1200));
+  }
+
+  return { content, agentName: def.name, model };
 }

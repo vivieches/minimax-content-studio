@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAsset } from "@/lib/storage/assets";
 import { cacheGeneratedImageUrls } from "@/lib/storage/generatedImages";
-import { generateImageWithProvider } from "@/lib/providers/generation";
+import { generateImageWithProvider, imageResultCacheSources } from "@/lib/providers/generation";
 import { imageProviderGenerateSchema, validateOr400 } from "@/lib/validation/schemas";
 import { withRateLimitHeaders, validatePayloadSize, PAYLOAD_LIMITS } from "@/lib/security/rateLimit";
 
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
     const { provider, saveToAssets = true, ...params } = validation.data;
     const result = await generateImageWithProvider(params, provider);
-    const cachedUrls = await cacheGeneratedImageUrls(result.urls);
+    const cachedUrls = await cacheGeneratedImageUrls(imageResultCacheSources(result));
     const responseResult = { ...result, urls: cachedUrls };
 
     if (saveToAssets && responseResult.urls[0]) {

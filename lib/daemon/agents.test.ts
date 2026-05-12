@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "fs/promises";
 import os from "os";
 import path from "path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { AGENT_DEFS, createAgentCommandInvocation, resolveAgentExecutable, wellKnownUserToolchainBins } from "./agents";
+import { AGENT_DEFS, createAgentCommandInvocation, extractAgentError, extractAgentText, resolveAgentExecutable, wellKnownUserToolchainBins } from "./agents";
 
 let tempRoot = "";
 
@@ -99,5 +99,44 @@ describe("agent executable resolver", () => {
     expect(invocation.command).toBe("C:\\Windows\\System32\\cmd.exe");
     expect(invocation.windowsVerbatimArguments).toBe(true);
     expect(invocation.args.slice(0, 3)).toEqual(["/d", "/s", "/c"]);
+  });
+
+  it("runs Codex in an isolated OpenDesign-style exec mode", () => {
+    const args = agent("codex").buildArgs({ model: "default", reasoning: "default" });
+
+    expect(args).toContain("--ephemeral");
+    expect(args).toEqual(expect.arrayContaining(["--disable", "plugins"]));
+  });
+});
+
+describe("agent output parsing", () => {
+  it("extracts assistant text from JSON event streams", () => {
+    const output = [
+      JSON.stringify({ type: "status", text: "running" }),
+      JSON.stringify({ type: "message", role: "assistant", content: "Título forte" }),
+      JSON.stringify({ type: "result", content: " final" }),
+    ].join("\n");
+
+    expect(extractAgentText(output)).toBe("Título forte final");
+  });
+
+  it("falls back to plain stdout when a CLI returns text", () => {
+    expect(extractAgentText("Texto direto\n")).toBe("Texto direto");
+  });
+
+  it("extracts structured agent errors before stderr noise", () => {
+    const output = [
+      JSON.stringify({ type: "thread.started" }),
+      JSON.stringify({
+        type: "error",
+        message: JSON.stringify({
+          type: "error",
+          status: 400,
+          error: { message: "The 'gpt-5.5' model requires a newer version of Codex." },
+        }),
+      }),
+    ].join("\n");
+
+    expect(extractAgentError(output)).toBe("The 'gpt-5.5' model requires a newer version of Codex.");
   });
 });

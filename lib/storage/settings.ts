@@ -10,15 +10,12 @@ export interface AppSettings {
   agentId: string | null;
   agentModels: Record<string, { model?: string; reasoning?: string }>;
   agentCliEnv: Record<string, Record<string, string>>;
-  mediaProviders: Record<string, { apiKey?: string; baseUrl?: string; model?: string; apiKeyTail?: string; apiKeyConfigured?: boolean }>;
   demoMode: boolean;
   debugMode: boolean;
   exportDirectory: string;
   language: "en" | "pt" | "es";
   updatedAt: string;
 }
-
-type MediaProviderStoredConfig = AppSettings["mediaProviders"][string];
 
 type LegacySettings = Partial<AppSettings> & {
   apiKey?: string;
@@ -107,27 +104,6 @@ function mergeProviderConfig(
   };
 }
 
-function mergeMediaProviderConfig(
-  current: Record<string, MediaProviderStoredConfig>,
-  incoming?: Record<string, MediaProviderStoredConfig>
-): Record<string, MediaProviderStoredConfig> {
-  if (!incoming) return current;
-  const next = { ...current };
-
-  for (const [providerId, config] of Object.entries(incoming)) {
-    const previous = next[providerId] ?? {};
-    next[providerId] = {
-      ...previous,
-      ...config,
-      apiKey: config.apiKey?.trim() ? config.apiKey : previous.apiKey,
-      apiKeyTail: config.apiKey?.trim() ? config.apiKey.slice(-4) : config.apiKeyTail ?? previous.apiKeyTail,
-      apiKeyConfigured: Boolean(config.apiKey?.trim()) || config.apiKeyConfigured || previous.apiKeyConfigured,
-    };
-  }
-
-  return next;
-}
-
 function normalizeCapabilityDefault(
   capability: ActiveProviderCapability,
   defaults: ProviderDefaults,
@@ -196,7 +172,6 @@ function migrateSettings(fileSettings: LegacySettings): AppSettings {
     agentId: fileSettings.agentId ?? null,
     agentModels: fileSettings.agentModels ?? {},
     agentCliEnv: sanitizeAgentCliEnv(fileSettings.agentCliEnv),
-    mediaProviders: fileSettings.mediaProviders ?? {},
     demoMode:
       process.env.NEXT_PUBLIC_DEMO_MODE === "true" ||
       fileSettings.demoMode === true,
@@ -237,7 +212,6 @@ function mergeSettings(current: AppSettings, partial: Partial<AppSettings>): App
     agentId: partial.agentId === undefined ? current.agentId : partial.agentId,
     agentModels: partial.agentModels ? { ...current.agentModels, ...partial.agentModels } : current.agentModels,
     agentCliEnv: partial.agentCliEnv === undefined ? current.agentCliEnv : sanitizeAgentCliEnv(partial.agentCliEnv),
-    mediaProviders: mergeMediaProviderConfig(current.mediaProviders, partial.mediaProviders),
     updatedAt: new Date().toISOString(),
   };
 }

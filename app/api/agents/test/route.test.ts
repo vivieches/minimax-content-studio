@@ -40,6 +40,8 @@ describe("POST /api/agents/test", () => {
 
     expect(response.status).toBe(200);
     expect(json.kind).toBe("success");
+    expect(json.errorKind).toBe("success");
+    expect(json.diagnostics[0]).toMatchObject({ surface: "agent", kind: "success" });
     expect(mocks.testAgent).toHaveBeenCalledWith({
       agentId: "codex",
       model: "gpt-5.5",

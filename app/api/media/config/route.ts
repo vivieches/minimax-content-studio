@@ -2,35 +2,44 @@ import { NextResponse } from "next/server";
 import { getSettings, updateSettings } from "@/lib/storage/settings";
 import { settingsSchema, validateOr400 } from "@/lib/validation/schemas";
 
-function stripMediaKeys(mediaProviders: Awaited<ReturnType<typeof getSettings>>["mediaProviders"]) {
+function maskedProviderConfig(settings: Awaited<ReturnType<typeof getSettings>>) {
   return Object.fromEntries(
-    Object.entries(mediaProviders).map(([providerId, config]) => {
-      const { apiKey: rawApiKey, ...safeConfig } = config;
-      const apiKey = rawApiKey?.trim() ?? "";
-      return [
-        providerId,
-        {
-          ...safeConfig,
-          apiKeyConfigured: Boolean(apiKey || config.apiKeyConfigured),
-          apiKeyTail: apiKey ? apiKey.slice(-4) : config.apiKeyTail,
-        },
-      ];
-    })
+    Object.entries(settings.providers).map(([providerId, config]) => [
+      providerId,
+      {
+        enabled: config.enabled,
+        configured: Boolean(config.apiKey),
+        apiKeyTail: config.apiKey ? config.apiKey.slice(-4) : "",
+        baseUrl: config.baseUrl,
+        models: config.models,
+        extra: config.extra,
+      },
+    ])
   );
 }
 
 export async function GET() {
   const settings = await getSettings();
-  return NextResponse.json({ ok: true, mediaProviders: stripMediaKeys(settings.mediaProviders) });
+  return NextResponse.json({
+    ok: true,
+    providers: maskedProviderConfig(settings),
+    defaults: settings.defaults,
+  });
 }
 
 export async function PUT(request: Request) {
-  const body = await request.json();
-  const validation = validateOr400(settingsSchema.pick({ mediaProviders: true }), body);
+  const body = await request.json().catch(() => ({}));
+  const validation = validateOr400(settingsSchema, body);
   if (!validation.success) {
     return NextResponse.json({ ok: false, error: validation.error }, { status: 400 });
   }
 
-  const result = await updateSettings({ mediaProviders: validation.data.mediaProviders ?? {} });
-  return NextResponse.json({ ok: true, mediaProviders: stripMediaKeys(result.mediaProviders) });
+  const { action, ...patch } = validation.data;
+  void action;
+  const settings = await updateSettings(patch as Partial<Awaited<ReturnType<typeof getSettings>>>);
+  return NextResponse.json({
+    ok: true,
+    providers: maskedProviderConfig(settings),
+    defaults: settings.defaults,
+  });
 }

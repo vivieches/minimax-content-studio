@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { diagnosticsFromError } from "@/lib/daemon/diagnostics";
 import { generateTextWithProvider } from "@/lib/providers/generation";
 import { textProviderGenerateSchema, validateOr400 } from "@/lib/validation/schemas";
 import { withRateLimitHeaders, validatePayloadSize, PAYLOAD_LIMITS } from "@/lib/security/rateLimit";
@@ -19,7 +20,12 @@ export async function POST(request: Request) {
     return withRateLimitHeaders(NextResponse.json({ ok: true, ...result }));
   } catch (error) {
     return NextResponse.json(
-      { ok: false, error: "Failed to generate text", details: error instanceof Error ? error.message : "Unknown error" },
+      {
+        ok: false,
+        error: "Failed to generate text",
+        details: error instanceof Error ? error.message : "Unknown error",
+        diagnostics: diagnosticsFromError(error),
+      },
       { status: 500 }
     );
   }

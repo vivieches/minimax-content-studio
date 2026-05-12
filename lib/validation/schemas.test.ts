@@ -5,6 +5,8 @@ import {
   scriptGenerateSchema,
   thumbnailGenerateSchema,
   titleGenerateSchema,
+  captionGenerateSchema,
+  critiquePackageSchema,
   validateOr400,
 } from "./schemas";
 
@@ -117,6 +119,56 @@ describe("titleGenerateSchema", () => {
 
   it("still rejects empty title topics", () => {
     const result = titleGenerateSchema.safeParse({ topic: "" });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("captionGenerateSchema", () => {
+  it("accepts SEO caption generation without a custom pattern", () => {
+    const result = captionGenerateSchema.safeParse({
+      script: "Roteiro sobre Gemma 4 e IA local.",
+      title: "Gemma 4 acelera IA local",
+      creatorProfile: {
+        tiktok: "/viviexec.es",
+        instagram: "/viviexec.es",
+        x: "https://x.com/vivieches?s=21",
+        businessEmail: "vitoria@example.com",
+        primaryLinkLabel: "Link de Gemma 4",
+        primaryLinkUrl: "https://ai.google.dev/gemma",
+        language: "es",
+      },
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.pattern).toBeUndefined();
+      expect(result.data.creatorProfile?.language).toBe("es");
+    }
+  });
+});
+
+describe("critiquePackageSchema", () => {
+  it("accepts full package critique payloads", () => {
+    const result = critiquePackageSchema.safeParse({
+      selectedTitle: "Como usar IA local sem depender de API",
+      script: "Roteiro ".repeat(1000),
+      thumbnailPrompt: "Creator desk with local AI models and API warning.",
+      thumbnailText: "IA LOCAL",
+      titleCandidates: [{ title: "Como usar IA local sem depender de API", score: 94 }],
+      topTitleCandidates: [{ title: "Como usar IA local sem depender de API", reason: "promessa clara" }],
+      captions: ["#IA\n\nDescrição SEO"],
+      projectId: "proj_test",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects malformed title candidates", () => {
+    const result = critiquePackageSchema.safeParse({
+      selectedTitle: "Pacote",
+      titleCandidates: [{ score: 94 }],
+    });
+
     expect(result.success).toBe(false);
   });
 });

@@ -31,11 +31,11 @@ export const providerManifests: ProviderManifest[] = [
     defaultBaseUrl: "https://api.openai.com/v1",
     defaultModels: {
       text: "gpt-4.1-mini",
-      image: "gpt-image-1",
+      image: "gpt-image-1.5",
     },
     modelOptions: {
       text: ["gpt-5.1", "gpt-5-mini", "gpt-4.1", "gpt-4.1-mini", "gpt-4o", "gpt-4o-mini"],
-      image: ["gpt-image-1", "dall-e-3"],
+      image: ["gpt-image-1.5", "gpt-image-1", "gpt-image-1-mini", "dall-e-3", "dall-e-2"],
     },
     modelDiscovery: true,
     docsUrl: "https://platform.openai.com/docs/api-reference",
@@ -52,11 +52,11 @@ export const providerManifests: ProviderManifest[] = [
     defaultBaseUrl: "https://api.openai.com/v1",
     defaultModels: {
       text: "gpt-4o-mini",
-      image: "dall-e-3",
+      image: "gpt-image-1",
     },
     modelOptions: {
       text: ["gpt-4o-mini", "gpt-4.1-mini", "llama-3.3-70b-versatile", "deepseek-chat"],
-      image: ["gpt-image-1", "dall-e-3", "black-forest-labs/FLUX.1-schnell"],
+      image: ["gpt-image-1.5", "gpt-image-1", "gpt-image-1-mini", "dall-e-3", "dall-e-2", "black-forest-labs/FLUX.1-schnell"],
     },
     modelDiscovery: true,
     docsUrl: "https://platform.openai.com/docs/api-reference",
@@ -77,7 +77,7 @@ export const providerManifests: ProviderManifest[] = [
     },
     modelOptions: {
       text: ["gpt-5-mini", "gpt-4.1", "gpt-4.1-mini", "gpt-4o", "gpt-4o-mini"],
-      image: ["gpt-image-1", "dall-e-3"],
+      image: ["gpt-image-1.5", "gpt-image-1", "gpt-image-1-mini", "dall-e-3", "dall-e-2"],
     },
     modelDiscovery: false,
     docsUrl: "https://learn.microsoft.com/azure/ai-services/openai/",
@@ -291,6 +291,25 @@ export const providerManifests: ProviderManifest[] = [
     authHeader: "none",
     requiresModelFor: ["text", "image"],
     tags: ["local", "custom", "text", "image"],
+  },
+  {
+    id: "stub",
+    adapterId: "stub",
+    name: "Stub (placeholder)",
+    description: "Deterministic local placeholder image provider for smoke tests without API keys.",
+    capabilities: ["image"],
+    defaultBaseUrl: "http://127.0.0.1",
+    defaultModels: {
+      image: "stub-image",
+    },
+    modelOptions: {
+      image: ["stub-image"],
+    },
+    modelDiscovery: false,
+    docsUrl: "https://github.com/nexu-io/open-design",
+    authHeader: "none",
+    requiresModelFor: ["image"],
+    tags: ["local", "image", "stub"],
   },
   {
     id: "pollinations",

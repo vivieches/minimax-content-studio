@@ -1,12 +1,27 @@
 import { NextResponse } from "next/server";
-import { AUDIO_MODELS_BY_KIND, IMAGE_MODELS, MEDIA_PROVIDERS, VIDEO_MODELS } from "@/lib/daemon/mediaCatalog";
+import { buildMediaCatalog } from "@/lib/providers/modelCatalog";
+import { getSettings } from "@/lib/storage/settings";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const settings = await getSettings();
+  const url = new URL(request.url);
+  const includeHidden = url.searchParams.get("includeHidden") === "1";
+  const providers = await buildMediaCatalog({ providers: settings.providers, includeHidden });
+
   return NextResponse.json({
     ok: true,
-    providers: MEDIA_PROVIDERS,
-    image: IMAGE_MODELS,
-    video: VIDEO_MODELS,
-    audio: AUDIO_MODELS_BY_KIND,
+    activeSurfaces: ["image"],
+    hiddenSurfaces: includeHidden ? ["video", "audio"] : [],
+    providers,
+    imageModels: providers
+      .filter((provider) => provider.surface === "image" && provider.active)
+      .flatMap((provider) =>
+        provider.models.map((model) => ({
+          id: model,
+          providerId: provider.id,
+          providerName: provider.name,
+        }))
+      ),
+    aspects: ["1:1", "16:9", "9:16", "4:3", "3:4"],
   });
 }

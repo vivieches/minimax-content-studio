@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { testAgent } from "@/lib/daemon/agents";
+import { agentDiagnostic } from "@/lib/daemon/diagnostics";
 import { getSettings } from "@/lib/storage/settings";
 import { sanitizeAgentCliEnv } from "@/lib/daemon/agentConfig";
 
@@ -17,5 +18,19 @@ export async function POST(request: Request) {
     reasoning: typeof body.reasoning === "string" ? body.reasoning : undefined,
     agentCliEnv: Object.hasOwn(body, "agentCliEnv") ? sanitizeAgentCliEnv(body.agentCliEnv) : settings.agentCliEnv,
   });
-  return NextResponse.json(result, { status: result.ok ? 200 : 404 });
+  return NextResponse.json(
+    {
+      ...result,
+      errorKind: result.kind,
+      diagnostics: [
+        agentDiagnostic({
+          kind: result.kind,
+          message: result.error,
+          agentName: result.agentName,
+          model: result.model,
+        }),
+      ],
+    },
+    { status: result.ok ? 200 : 404 }
+  );
 }

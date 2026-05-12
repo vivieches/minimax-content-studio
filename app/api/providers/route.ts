@@ -1,18 +1,10 @@
 import { NextResponse } from "next/server";
-import { listProviderManifests } from "@/lib/providers/registry";
+import { buildProviderCatalog } from "@/lib/providers/modelCatalog";
 import { getSettings } from "@/lib/storage/settings";
 
 export async function GET() {
   const settings = await getSettings();
-  const providers = listProviderManifests().map((manifest) => {
-    const config = settings.providers[manifest.id];
-    return {
-      ...manifest,
-      enabled: Boolean(config?.enabled),
-      hasApiKey: Boolean(config?.apiKey),
-      configuredModels: config?.models ?? {},
-    };
-  });
+  const providers = await buildProviderCatalog({ providers: settings.providers });
 
   return NextResponse.json({
     ok: true,

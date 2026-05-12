@@ -11,25 +11,71 @@ export type ConnectionErrorKind =
   | "timeout"
   | "unknown";
 
-const PRIVATE_V4 = [
-  /^10\./,
-  /^127\./,
-  /^169\.254\./,
-  /^172\.(1[6-9]|2\d|3[0-1])\./,
-  /^192\.168\./,
-  /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./,
-  /^0\./,
-];
-
-function isLoopbackHost(hostname: string): boolean {
-  const clean = hostname.toLowerCase();
-  return clean === "localhost" || clean === "::1" || clean === "127.0.0.1" || clean.startsWith("127.");
+function normalizeHost(hostname: string): string {
+  const lower = hostname.toLowerCase();
+  return lower.startsWith("[") && lower.endsWith("]") ? lower.slice(1, -1) : lower;
 }
 
-function isPrivateAddress(address: string): boolean {
-  if (address === "::1") return true;
-  if (address.startsWith("fe80:") || address.startsWith("fc") || address.startsWith("fd")) return true;
-  return PRIVATE_V4.some((pattern) => pattern.test(address));
+function parseIpv4(hostname: string): [number, number, number, number] | null {
+  const parts = hostname.split(".");
+  if (parts.length !== 4) return null;
+  const parsed = parts.map((part) => {
+    if (!/^\d{1,3}$/.test(part)) return null;
+    const value = Number(part);
+    return value >= 0 && value <= 255 ? value : null;
+  });
+  if (parsed.some((part) => part === null)) return null;
+  return parsed as [number, number, number, number];
+}
+
+function ipv4MappedToDotted(hostname: string): string | null {
+  const host = normalizeHost(hostname);
+  const mapped = /^::ffff:(.+)$/i.exec(host)?.[1];
+  if (!mapped) return null;
+  if (parseIpv4(mapped)) return mapped;
+
+  const hexParts = mapped.split(":");
+  if (hexParts.length !== 2 || !hexParts.every((part) => /^[0-9a-f]{1,4}$/i.test(part))) return null;
+  const [hi, lo] = hexParts;
+  if (!hi || !lo) return null;
+
+  const value = (Number.parseInt(hi, 16) << 16) | Number.parseInt(lo, 16);
+  return [(value >>> 24) & 255, (value >>> 16) & 255, (value >>> 8) & 255, value & 255].join(".");
+}
+
+function isLoopbackHost(hostname: string): boolean {
+  const clean = normalizeHost(hostname);
+  if (clean === "localhost" || clean === "::1") return true;
+  const ipv4 = parseIpv4(clean) ?? parseIpv4(ipv4MappedToDotted(clean) ?? "");
+  return Boolean(ipv4 && ipv4[0] === 127);
+}
+
+function isBlockedIpv4(address: string): boolean {
+  const ipv4 = parseIpv4(address);
+  if (!ipv4) return false;
+  const [a, b] = ipv4;
+  return (
+    a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    a >= 224
+  );
+}
+
+function isBlockedExternalAddress(address: string): boolean {
+  const clean = normalizeHost(address);
+  const mapped = ipv4MappedToDotted(clean);
+  if (mapped) return isBlockedIpv4(mapped);
+  if (isBlockedIpv4(clean)) return true;
+  if (clean === "::" || clean === "::1") return true;
+  if (/^f[cd][0-9a-f]{2}:/i.test(clean)) return true;
+  if (/^fe[89ab][0-9a-f]:/i.test(clean)) return true;
+  if (/^ff[0-9a-f]{2}:/i.test(clean)) return true;
+  return false;
 }
 
 export async function validateBaseUrl(rawUrl: string): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -46,13 +92,13 @@ export async function validateBaseUrl(rawUrl: string): Promise<{ ok: true } | { 
 
   if (isLoopbackHost(url.hostname)) return { ok: true };
 
-  if (isIP(url.hostname) && isPrivateAddress(url.hostname)) {
+  if (isIP(normalizeHost(url.hostname)) && isBlockedExternalAddress(url.hostname)) {
     return { ok: false, error: "Remote private, link-local and reserved IP ranges are blocked." };
   }
 
   try {
     const records = await lookup(url.hostname, { all: true, verbatim: true });
-    if (records.some((record) => isPrivateAddress(record.address))) {
+    if (records.some((record) => isBlockedExternalAddress(record.address))) {
       return { ok: false, error: "Base URL resolves to a private or reserved network address." };
     }
   } catch {
@@ -68,12 +114,38 @@ export function classifyConnectionError(input: {
   code?: string;
 }): ConnectionErrorKind {
   const message = `${input.message ?? ""} ${input.code ?? ""}`.toLowerCase();
-  if (input.status === 401 || message.includes("api key") || message.includes("unauthorized")) return "auth_failed";
-  if (input.status === 403 || message.includes("forbidden")) return "forbidden";
-  if (input.status === 404 || message.includes("model") && message.includes("not found")) return "not_found_model";
-  if (input.status === 429 || message.includes("rate limit")) return "rate_limited";
-  if (input.status && input.status >= 500) return "upstream_unavailable";
-  if (message.includes("timeout") || message.includes("abort")) return "timeout";
+  const status = input.status ?? Number(/\b(?:http|status)\s*[:=]?\s*(\d{3})\b/i.exec(message)?.[1]);
+  if (
+    status === 401 ||
+    message.includes("api key") ||
+    message.includes("unauthorized") ||
+    message.includes("invalid_api_key") ||
+    message.includes("incorrect api key") ||
+    message.includes("missing api key")
+  ) {
+    return "auth_failed";
+  }
+  if (status === 403 || message.includes("forbidden") || message.includes("permission denied")) return "forbidden";
+  if (
+    status === 404 ||
+    (message.includes("model") && (message.includes("not found") || message.includes("unknown") || message.includes("does not exist"))) ||
+    message.includes("deploymentnotfound")
+  ) {
+    return "not_found_model";
+  }
+  if (status === 429 || message.includes("rate limit") || message.includes("too many requests")) return "rate_limited";
+  if (status && status >= 500) return "upstream_unavailable";
+  if (
+    message.includes("timeout") ||
+    message.includes("timed out") ||
+    message.includes("abort") ||
+    message.includes("etimedout")
+  ) {
+    return "timeout";
+  }
   if (message.includes("invalid") && message.includes("url")) return "invalid_base_url";
+  if (message.includes("enotfound") || message.includes("econnrefused") || message.includes("fetch failed")) {
+    return "upstream_unavailable";
+  }
   return "unknown";
 }
