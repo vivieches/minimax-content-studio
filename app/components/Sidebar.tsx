@@ -4,31 +4,17 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import NextImage from "next/image";
-import {
-  Box,
-  FileText,
-  Home,
-  Image,
-  Layers,
-  Menu,
-  Settings,
-  TextCursorInput,
-  X,
-} from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { appRoutes, uiCopy } from "@/lib/ui/copy";
 
-const navItems = [
-  { icon: Home, label: "Início", href: "/" },
-  { icon: Layers, label: "Pipeline", href: "/pipeline" },
-  { icon: FileText, label: "Roteiros", href: "/scripts" },
-  { icon: Image, label: "Miniaturas", href: "/thumbnails" },
-  { icon: TextCursorInput, label: "Títulos/legendas", href: "/content" },
-  { icon: Box, label: "Arquivos", href: "/assets" },
-];
+const navItems = appRoutes.filter((item) => item.href !== "/settings");
+const settingsItem = appRoutes.find((item) => item.href === "/settings");
 
 export function Sidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const SettingsIcon = settingsItem?.icon;
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname?.startsWith(href);
@@ -82,25 +68,26 @@ export function Sidebar() {
           <LanguageSwitcher />
         </div>
 
-        {/* Settings */}
-        <Link
-          href="/settings"
-          title="Configurações"
-          className={`
-            relative flex h-10 w-full items-center justify-center rounded-[7px]
-            transition-all duration-200 ease-out
-            ${
-              isActive("/settings")
-                ? "bg-[#141620] text-accent"
-                : "text-[#8D91A0] hover:bg-white/[0.045] hover:text-[#F5F2F4]"
-            }
-          `}
-        >
-          <Settings className="h-5 w-5" strokeWidth={1.5} />
-          {isActive("/settings") && (
-            <span className="absolute left-0 top-1/2 h-[34px] w-px -translate-y-1/2 rounded-r-full bg-accent" />
-          )}
-        </Link>
+        {settingsItem && SettingsIcon ? (
+          <Link
+            href={settingsItem.href}
+            title={settingsItem.label}
+            className={`
+              relative flex h-10 w-full items-center justify-center rounded-[7px]
+              transition-all duration-200 ease-out
+              ${
+                isActive(settingsItem.href)
+                  ? "bg-[#141620] text-accent"
+                  : "text-[#8D91A0] hover:bg-white/[0.045] hover:text-[#F5F2F4]"
+              }
+            `}
+          >
+            <SettingsIcon className="h-5 w-5" strokeWidth={1.5} />
+            {isActive(settingsItem.href) && (
+              <span className="absolute left-0 top-1/2 h-[34px] w-px -translate-y-1/2 rounded-r-full bg-accent" />
+            )}
+          </Link>
+        ) : null}
 
         {/* Avatar */}
         <div className="flex h-[51px] w-full items-center justify-center pt-[7px]">
@@ -123,7 +110,7 @@ export function Sidebar() {
       <button
         className="fixed left-4 top-3.5 z-[60] flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-card md:hidden"
         onClick={() => setMobileOpen(!mobileOpen)}
-        aria-label={mobileOpen ? "Cerrar navegación" : "Abrir navegación"}
+        aria-label={mobileOpen ? uiCopy.closeNavigation : uiCopy.openNavigation}
       >
         {mobileOpen ? (
           <X className="h-4 w-4 text-ink" />

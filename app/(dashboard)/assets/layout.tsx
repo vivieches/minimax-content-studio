@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Assets Library — Open Studio",
-  description: "Save and manage generated scripts, thumbnails, prompts and content packages",
+  title: "Arquivos — Open Studio",
+  description: "Salve e gerencie roteiros, thumbnails, prompts e pacotes de conteúdo gerados.",
   openGraph: {
-    title: "Assets Library — Open Studio",
-    description: "Save and manage generated scripts, thumbnails, prompts and content packages",
+    title: "Arquivos — Open Studio",
+    description: "Salve e gerencie roteiros, thumbnails, prompts e pacotes de conteúdo gerados.",
     type: "website",
     siteName: "Open Studio",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Assets Library — Open Studio",
-    description: "Save and manage generated scripts, thumbnails, prompts and content packages",
+    title: "Arquivos — Open Studio",
+    description: "Salve e gerencie roteiros, thumbnails, prompts e pacotes de conteúdo gerados.",
   },
 };
 

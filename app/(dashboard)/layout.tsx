@@ -1,4 +1,5 @@
 import { Sidebar } from "../components/Sidebar";
+import { QuickSwitcher } from "../components/QuickSwitcher";
 import type { CSSProperties } from "react";
 
 const dashboardDarkVars = {
@@ -27,6 +28,7 @@ export default function DashboardLayout({
 }>) {
   return (
     <div className="dashboard-dark flex h-screen overflow-hidden bg-canvas" style={dashboardDarkVars}>
+      <QuickSwitcher showTrigger={false} />
       <Sidebar />
       <main
         id="main-content"

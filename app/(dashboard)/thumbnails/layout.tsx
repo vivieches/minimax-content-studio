@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Thumbnail Generator — Open Studio",
-  description: "Create AI-powered thumbnails for YouTube with custom prompts and styles",
+  title: "Miniaturas — Open Studio",
+  description: "Crie thumbnails de YouTube com prompts, estilos e imagens geradas por IA.",
   openGraph: {
-    title: "Thumbnail Generator — Open Studio",
-    description: "Create AI-powered thumbnails for YouTube with custom prompts and styles",
+    title: "Miniaturas — Open Studio",
+    description: "Crie thumbnails de YouTube com prompts, estilos e imagens geradas por IA.",
     type: "website",
     siteName: "Open Studio",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Thumbnail Generator — Open Studio",
-    description: "Create AI-powered thumbnails for YouTube with custom prompts and styles",
+    title: "Miniaturas — Open Studio",
+    description: "Crie thumbnails de YouTube com prompts, estilos e imagens geradas por IA.",
   },
 };
 

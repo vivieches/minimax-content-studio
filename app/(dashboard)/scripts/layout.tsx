@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Script Generator — Open Studio",
-  description: "Generate YouTube scripts with AI-powered briefing, structure, and review steps",
+  title: "Roteiros — Open Studio",
+  description: "Gere roteiros de YouTube com briefing, estrutura e revisão assistida por IA.",
   openGraph: {
-    title: "Script Generator — Open Studio",
-    description: "Generate YouTube scripts with AI-powered briefing, structure, and review steps",
+    title: "Roteiros — Open Studio",
+    description: "Gere roteiros de YouTube com briefing, estrutura e revisão assistida por IA.",
     type: "website",
     siteName: "Open Studio",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Script Generator — Open Studio",
-    description: "Generate YouTube scripts with AI-powered briefing, structure, and review steps",
+    title: "Roteiros — Open Studio",
+    description: "Gere roteiros de YouTube com briefing, estrutura e revisão assistida por IA.",
   },
 };
 

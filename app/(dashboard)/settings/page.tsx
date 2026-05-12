@@ -724,7 +724,9 @@ export default function SettingsPage() {
             )}
           >
             <span className="block text-[15px] font-semibold">CLI local</span>
-            <span className="mt-1 block text-[12px] text-ink-3">{installedCount} instalados</span>
+            <span className="mt-1 block text-[12px] text-ink-3">
+              {installedCount} {installedCount === 1 ? "instalada" : "instaladas"}
+            </span>
           </button>
           <button
             type="button"
@@ -1028,7 +1030,7 @@ export default function SettingsPage() {
         <section className="rounded-[16px] border border-line bg-card p-5 shadow-[0_18px_48px_rgba(0,0,0,0.16)]">
           <div className="mb-4 flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-accent" strokeWidth={1.7} />
-            <h2 className="text-[16px] font-semibold text-ink">Predeterminados de geração</h2>
+            <h2 className="text-[16px] font-semibold text-ink">Padrões de geração</h2>
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {capabilityCards.map((capability) => (
@@ -1066,7 +1068,7 @@ export default function SettingsPage() {
           <div>
             <h2 className="text-[15px] font-semibold text-ink">Modo local-first</h2>
             <p className="mt-1 max-w-5xl text-[13px] leading-relaxed text-ink-2">
-              Defaults escolhem quem gera texto e imagem. API key não muda a lista de modelos sozinha; ela só habilita o provedor selecionado para teste e geração real.
+              Os padrões abaixo escolhem quem gera texto e imagem. API key não troca modelos sozinha; ela só habilita o provedor selecionado para teste e geração real.
             </p>
           </div>
         </section>

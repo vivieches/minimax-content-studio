@@ -4,6 +4,7 @@ import { join } from "path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { startDaemonServer, type StartedDaemonServer } from "./server";
+import { getOrCreateLocalToken, localAuthHeaders } from "./security/localAuth";
 
 describe("daemon server", () => {
   const cleanupDirs: string[] = [];
@@ -60,14 +61,20 @@ describe("daemon server", () => {
     cleanupDirs.push(storageDir);
 
     server = await startDaemonServer({ port: 0, storageDir });
+    const createBody = JSON.stringify({ id: "proj_http", name: "HTTP project" });
+    const writeBody = "roteiro";
     const created = await fetch(`${server.url}/api/projects`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: "proj_http", name: "HTTP project" }),
+      headers: {
+        "Content-Type": "application/json",
+        ...(await signedHeaders(server, "POST", "/api/projects", createBody)),
+      },
+      body: createBody,
     }).then((response) => response.json());
     const written = await fetch(`${server.url}/api/projects/proj_http/files/files/script.md`, {
       method: "PUT",
-      body: "roteiro",
+      headers: await signedHeaders(server, "PUT", "/api/projects/proj_http/files/files/script.md", writeBody),
+      body: writeBody,
     }).then((response) => response.json());
     const fileText = await fetch(`${server.url}/api/projects/proj_http/files/files/script.md`).then((response) =>
       response.text(),
@@ -78,6 +85,22 @@ describe("daemon server", () => {
     expect(written.file).toMatchObject({ path: "files/script.md", kind: "markdown" });
     expect(fileText).toBe("roteiro");
     expect(files.files).toEqual([expect.objectContaining({ path: "files/script.md" })]);
+  });
+
+  it("requires local auth for privileged project mutations", async () => {
+    const storageDir = mkdtempSync(join(tmpdir(), "open-studio-daemon-"));
+    cleanupDirs.push(storageDir);
+
+    server = await startDaemonServer({ port: 0, storageDir });
+    const response = await fetch(`${server.url}/api/projects`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "proj_unauth" }),
+    });
+    const json = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(json.error).toBe("local_auth_required");
   });
 
   it("serves run lifecycle routes", async () => {
@@ -112,3 +135,13 @@ describe("daemon server", () => {
     ]);
   });
 });
+
+async function signedHeaders(server: StartedDaemonServer, method: string, path: string, body = "") {
+  const token = await getOrCreateLocalToken(server.context);
+  return localAuthHeaders({
+    contextToken: token,
+    method,
+    path,
+    body,
+  });
+}

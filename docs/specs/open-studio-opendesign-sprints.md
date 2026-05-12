@@ -4,9 +4,9 @@ Data: 2026-05-11
 
 ## Implementation Status
 
-- Done: Sprint 0 storage/test isolation, Sprint 1 daemon foundation, Sprint 2 project store, Sprint 3 run lifecycle, Sprint 4 agent runtime loop, Sprint 5 fallback chain and diagnostics, Sprint 6 provider/model discovery, Sprint 7 full media tool, Sprint 8 research and CTR/SEO titles, Sprint 9 captions, Sprint 10 prompt composer, skills, memory and brand kit, Sprint 11 package critique, Sprint 12 file workspace and live artifacts.
-- Current verification: `rtk npm run lint`, `rtk npm test` and `rtk npm run build` passed after Sprint 12. Build still reports the known Turbopack/NFT warning, now traced through the project file API route.
-- Next: Sprint 13 professional export.
+- Done: Sprint 0 storage/test isolation, Sprint 1 daemon foundation, Sprint 2 project store, Sprint 3 run lifecycle, Sprint 4 agent runtime loop, Sprint 5 fallback chain and diagnostics, Sprint 6 provider/model discovery, Sprint 7 full media tool, Sprint 8 research and CTR/SEO titles, Sprint 9 captions, Sprint 10 prompt composer, skills, memory and brand kit, Sprint 11 package critique, Sprint 12 file workspace and live artifacts, Sprint 13 professional export, Sprint 14 import, desktop bridge and security, Sprint 15 UX polish, i18n baseline and quick switcher.
+- Current verification: `rtk npm run lint`, `rtk npm test` (`141/141`) and `rtk npm run build` passed after Sprint 15. Build still reports one known Turbopack/NFT warning through `/api/desktop/reveal`, because local storage routes import `DATA_DIR`.
+- Next: Sprint 16 full flow verification.
 
 ## Sprint 0 - Stabilize Current Main
 
@@ -285,12 +285,12 @@ Goal: harden local-first behavior.
 
 Specs:
 
-- Add project import.
-- Add native folder dialog bridge where possible.
-- Add origin validation.
-- Add daemon auth token/HMAC for privileged operations.
-- Add redaction.
-- Add SSRF tests.
+- Add project import. Done: `/api/projects/import` imports Sprint 13 ZIP bundles into a new project and rejects unsafe paths.
+- Add native folder dialog bridge where possible. Done: `/api/desktop/reveal` resolves storage/project/export targets and opens them locally, with dry-run support for tests.
+- Add origin validation. Done: privileged routes only accept local same-origin browser requests or signed local calls.
+- Add daemon auth token/HMAC for privileged operations. Done: token is stored under `.open-studio/daemon/local-token`; daemon project mutations require HMAC and Next privileged routes accept local session cookie.
+- Add redaction. Done: daemon logs redact API keys, bearer tokens and secret-shaped fields before writing to disk.
+- Add SSRF tests. Existing provider connection guard coverage remains in `lib/daemon/connection.test.ts`; Sprint 14 adds the local-origin privileged route guard coverage.
 
 Acceptance:
 
@@ -304,18 +304,18 @@ Goal: make the whole thing coherent.
 
 Specs:
 
-- Centralize strings.
-- Make pt-BR consistent.
-- Add quick switcher and recents.
-- Add language/appearance future surfaces or real implementation.
-- Clarify Settings copy.
-- Add skeleton/empty/error states.
+- Done: centralized route/action copy in `lib/ui/copy.ts`.
+- Done: made the core visible flow pt-BR consistent across Settings, Scripts, Thumbnails and Assets.
+- Done: added global quick switcher with recent routes and `Ctrl/Cmd+K`.
+- Done: kept language/appearance as honest future surfaces.
+- Done: clarified Settings copy around defaults, API keys, CLI local and BYOK.
+- Done: tightened empty/error states where the UI previously felt mocked.
 
 Acceptance:
 
-- No mixed PT/ES in visible core flow.
-- Empty states point to real next action.
-- Provider/agent/media states are understandable.
+- Passed: no mixed PT/ES found in the visible core strings touched this sprint.
+- Passed: empty states point to generating, uploading, configuring or opening real project/workspace actions.
+- Passed: provider/agent/media states distinguish detected, connected, missing key and saved defaults.
 
 ## Sprint 16 - Full Flow Verification
 

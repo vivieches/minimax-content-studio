@@ -54,7 +54,7 @@ const PRESETS = [
   { id: "face-text", label: "Cara + texto", icon: ImagePlus },
   { id: "split-frame", label: "Split frame", icon: Layers },
   { id: "minimal-clean", label: "Minimal clean", icon: ImagePlus },
-  { id: "more", label: "Más presets", icon: ChevronDown },
+  { id: "more", label: "Mais presets", icon: ChevronDown },
 ];
 
 const STYLE_OPTIONS = [
@@ -63,52 +63,52 @@ const STYLE_OPTIONS = [
   "Split frame",
   "Minimal clean",
   "Tech premium",
-  "Producto + creador",
-  "Noticia IA",
-  "Antes/después",
+  "Produto + criador",
+  "Notícia de IA",
+  "Antes/depois",
 ];
 
 const AUDIENCE_OPTIONS = [
-  "Creadores y YouTubers",
+  "Criadores e YouTubers",
   "Developers e IA builders",
-  "Marketers y growth",
-  "Fundadores y emprendedores",
-  "Estudiantes y makers",
-  "Audiencia general",
+  "Marketing e growth",
+  "Fundadores e empreendedores",
+  "Estudantes e makers",
+  "Audiência geral",
 ];
 
-const MOOD_OPTIONS = ["Sorprendido 😮", "Confiado", "Curioso", "Dramático", "Profesional", "Emocionado", "Misterioso"];
+const MOOD_OPTIONS = ["Surpreso", "Confiado", "Curioso", "Dramático", "Profissional", "Animado", "Misterioso"];
 
 const BACKGROUND_OPTIONS = [
-  "Sólido simple",
+  "Fundo sólido",
   "Gradiente suave",
-  "UI de producto",
-  "Estudio oscuro",
+  "UI de produto",
+  "Estúdio escuro",
   "Minimal tech",
   "Split background",
-  "Abstracto",
+  "Abstrato",
 ];
 
 const COLOR_OPTIONS = [
-  { id: "minimax-coral", label: "Coral cálido MiniMax", colors: ["#ff6077", "#fff7f9", "#0f172a", "#59606a"] },
+  { id: "minimax-coral", label: "Coral quente MiniMax", colors: ["#ff6077", "#fff7f9", "#0f172a", "#59606a"] },
   { id: "open-studio-pink", label: "Rosa Open Studio", colors: ["#D06FA7", "#F5F2F4", "#151516", "#5F6472"] },
   { id: "dark-premium", label: "Dark premium", colors: ["#D06FA7", "#11131C", "#F5F2F4", "#9B6CFF"] },
-  { id: "clean-white", label: "Blanco limpio", colors: ["#F5F2F4", "#D06FA7", "#0A0A0D", "#CBD5E1"] },
-  { id: "black-coral", label: "Negro + coral", colors: ["#0A0A0D", "#ff6077", "#F5F2F4", "#27272A"] },
+  { id: "clean-white", label: "Branco limpo", colors: ["#F5F2F4", "#D06FA7", "#0A0A0D", "#CBD5E1"] },
+  { id: "black-coral", label: "Preto + coral", colors: ["#0A0A0D", "#ff6077", "#F5F2F4", "#27272A"] },
   { id: "tech-blue", label: "Azul tech", colors: ["#0F172A", "#60A5FA", "#F5F2F4", "#D06FA7"] },
-  { id: "custom", label: "Custom", colors: ["#D06FA7", "#F5F2F4", "#151516", "#5F6472"] },
+  { id: "custom", label: "Personalizado", colors: ["#D06FA7", "#F5F2F4", "#151516", "#5F6472"] },
 ];
 
-const HOOKS = ["La IA que cambió mi negocio", "5 herramientas que uso a diario", "Automatiza tu canal con IA"];
+const HOOKS = ["A IA que mudou meu fluxo", "5 ferramentas que uso todo dia", "Automatize seu canal com IA"];
 
 const INITIAL_CONFIG: ThumbnailConfig = {
-  topic: "MiniMax M2.7 construyó mi fábrica de contenido",
+  topic: "MiniMax M2.7 construiu minha fábrica de conteúdo",
   title: "5 AI Tools in 2024",
-  impactText: "FÁBRICA DE CONTENIDO",
-  audience: "Creadores y YouTubers",
+  impactText: "FÁBRICA DE CONTEÚDO",
+  audience: "Criadores e YouTubers",
   visualStyle: "YouTube alto CTR",
-  mood: "Sorprendido 😮",
-  background: "Sólido simple",
+  mood: "Surpreso",
+  background: "Fundo sólido",
   colorPreference: "minimax-coral",
   includeFace: true,
   includeLogo: false,
@@ -292,15 +292,15 @@ export default function ThumbnailGeneratorPage() {
     const presetMap: Record<string, Partial<ThumbnailConfig>> = {
       "high-ctr": {
         visualStyle: "YouTube alto CTR",
-        mood: "Sorprendido 😮",
-        background: "Sólido simple",
+        mood: "Surpreso",
+        background: "Fundo sólido",
         colorPreference: "minimax-coral",
         includeFace: true,
       },
       "face-text": {
         visualStyle: "Cara + texto",
-        mood: "Emocionado",
-        background: "Estudio oscuro",
+        mood: "Animado",
+        background: "Estúdio escuro",
         colorPreference: "open-studio-pink",
         includeFace: true,
       },
@@ -313,7 +313,7 @@ export default function ThumbnailGeneratorPage() {
       },
       "minimal-clean": {
         visualStyle: "Minimal clean",
-        mood: "Profesional",
+        mood: "Profissional",
         background: "Minimal tech",
         colorPreference: "dark-premium",
         includeFace: false,
@@ -326,14 +326,14 @@ export default function ThumbnailGeneratorPage() {
   function normalizeGenerationError(message: string) {
     const lower = message.toLowerCase();
     if (lower.includes("api key") || lower.includes("provider") || lower.includes("settings")) {
-      return "Configura un provider en Ajustes para generar miniaturas.";
+      return "Configure um provedor em Configurações para gerar miniaturas.";
     }
-    return "No se pudo generar la miniatura. Revisa tu conexión o intenta de nuevo.";
+    return "Não foi possível gerar a miniatura. Revise a conexão ou tente de novo.";
   }
 
   async function generateImages(nextVariations = config.variations, append = false) {
     if (!canGenerate) {
-      setError("Completa tema, título y texto de impacto antes de generar.");
+      setError("Preencha tema, título e texto de impacto antes de gerar.");
       return;
     }
 
@@ -363,7 +363,7 @@ export default function ThumbnailGeneratorPage() {
         throw new Error(data?.details || data?.error || "generation failed");
       }
       if (!data?.urls?.length) {
-        setError("La generación terminó sin imagen. Intenta con otro prompt.");
+        setError("A geração terminou sem imagem. Tente outro prompt.");
         return;
       }
 
@@ -376,7 +376,7 @@ export default function ThumbnailGeneratorPage() {
         };
       });
       if (!append) setSelectedIndex(0);
-      showStatus(append ? "Variaciones generadas" : "Miniatura generada");
+      showStatus(append ? "Variações geradas" : "Miniatura gerada");
     } catch (generationError) {
       setError(normalizeGenerationError(generationError instanceof Error ? generationError.message : ""));
     } finally {
@@ -389,18 +389,18 @@ export default function ThumbnailGeneratorPage() {
     const file = event.target.files?.[0];
     if (!file) return;
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      setError("Usa JPG, PNG o WebP como referencia.");
+      setError("Use JPG, PNG ou WebP como referência.");
       return;
     }
     if (file.size > 450_000) {
-      setError("La referencia debe pesar menos de 450 KB para enviarse al provider.");
+      setError("A referência deve ter menos de 450 KB para ser enviada ao provedor.");
       return;
     }
 
     const reader = new FileReader();
     reader.onload = () => {
       updateConfig("referenceImage", String(reader.result));
-      showStatus("Referencia cargada");
+      showStatus("Referência carregada");
     };
     reader.readAsDataURL(file);
   }
@@ -418,7 +418,7 @@ export default function ThumbnailGeneratorPage() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      showStatus("Download listo");
+      showStatus("Download pronto");
     } catch {
       window.open(selectedUrl, "_blank");
     }
@@ -428,14 +428,14 @@ export default function ThumbnailGeneratorPage() {
     setConfig((current) => ({
       ...current,
       visualStyle: "YouTube alto CTR",
-      mood: "Sorprendido 😮",
-      background: "Sólido simple",
+      mood: "Surpreso",
+      background: "Fundo sólido",
       colorPreference: "minimax-coral",
       includeFace: true,
-      impactText: current.impactText || "FÁBRICA DE CONTENIDO",
+      impactText: current.impactText || "FÁBRICA DE CONTEÚDO",
     }));
     setActivePreset("high-ctr");
-    showStatus("Sugerencia aplicada");
+    showStatus("Sugestão aplicada");
   }
 
   return (
@@ -444,20 +444,23 @@ export default function ThumbnailGeneratorPage() {
         <header className="flex flex-col gap-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div>
-              <h1 className="text-[28px] font-bold leading-tight tracking-[-0.035em] text-ink">Generador de Miniaturas</h1>
-              <p className="mt-2 text-[14px] text-ink-2">Crea miniaturas atractivas que generan más clics.</p>
+              <h1 className="text-[28px] font-bold leading-tight tracking-[-0.035em] text-ink">Gerador de Miniaturas</h1>
+              <p className="mt-2 text-[14px] text-ink-2">Crie thumbnails com foco em CTR e leitura rápida.</p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <label className="relative block sm:w-[310px]">
-                <span className="sr-only">Buscar en Open Studio...</span>
+                <span className="sr-only">Buscar no Open Studio...</span>
                 <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-2" strokeWidth={1.7} />
                 <input
                   type="search"
-                  placeholder="Buscar en Open Studio..."
+                  placeholder="Buscar no Open Studio..."
+                  readOnly
+                  onFocus={() => window.dispatchEvent(new Event("open-studio:quick-switcher"))}
+                  onClick={() => window.dispatchEvent(new Event("open-studio:quick-switcher"))}
                   className="h-10 w-full rounded-[9px] border border-line bg-card px-10 pr-14 text-[13px] text-ink placeholder:text-ink-2 transition duration-200 hover:border-line-hi focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/15"
                 />
                 <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded-[5px] border border-line bg-card-hi px-1.5 py-0.5 text-[10px] text-ink-2">
-                  ⌘K
+                  Ctrl K
                 </kbd>
               </label>
               <button
@@ -466,7 +469,7 @@ export default function ThumbnailGeneratorPage() {
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-[8px] border border-line bg-white/[0.025] px-4 text-[13px] font-semibold text-ink-2 transition duration-200 hover:border-line-hi hover:bg-hover hover:text-ink"
               >
                 <Clock3 className="h-4 w-4" strokeWidth={1.8} />
-                Historial
+                Histórico
               </button>
             </div>
           </div>
@@ -508,19 +511,19 @@ export default function ThumbnailGeneratorPage() {
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-[300px_minmax(0,1fr)_300px] 2xl:grid-cols-[320px_minmax(0,1fr)_330px]">
           <Card className="min-w-0 overflow-hidden">
             <div className="border-b border-line px-5 py-4">
-              <h2 className="text-[15px] font-semibold text-ink">Configuración</h2>
+              <h2 className="text-[15px] font-semibold text-ink">Configuração</h2>
             </div>
             <div className="space-y-4 p-5">
-              <Field label="TEMA DEL VIDEO">
+              <Field label="Tema do vídeo">
                 <input
                   value={config.topic}
                   onChange={(event) => updateConfig("topic", event.target.value)}
                   className="h-10 w-full rounded-[8px] border border-line bg-card-hi px-3 text-[12px] font-medium text-ink placeholder:text-ink-3 transition duration-200 hover:border-line-hi focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/15"
-                  placeholder="MiniMax M2.7 construyó mi fábrica de contenido"
+                  placeholder="MiniMax M2.7 construiu minha fábrica de conteúdo"
                 />
               </Field>
 
-              <Field label="TÍTULO" aside={<span className="text-[10px] text-ink-3">{config.title.length}/100</span>}>
+              <Field label="Título" aside={<span className="text-[10px] text-ink-3">{config.title.length}/100</span>}>
                 <input
                   value={config.title}
                   maxLength={100}
@@ -531,13 +534,13 @@ export default function ThumbnailGeneratorPage() {
               </Field>
 
               <Field
-                label="TEXTO DE IMPACTO"
+                label="Texto de impacto"
                 aside={<span className="text-[10px] text-ink-3">{config.impactText.length}/40</span>}
                 help={
                   impactWordCount > 6 ? (
-                    <span className="text-warn">Para mejor lectura, usa 2-5 palabras.</span>
+                    <span className="text-warn">Para melhor leitura, use 2-5 palavras.</span>
                   ) : (
-                    "2-5 palabras ideal para YouTube"
+                    "2-5 palavras é o ideal para YouTube"
                   )
                 }
               >
@@ -546,34 +549,34 @@ export default function ThumbnailGeneratorPage() {
                   maxLength={40}
                   onChange={(event) => updateConfig("impactText", event.target.value)}
                   className="h-10 w-full rounded-[8px] border border-line bg-card-hi px-3 text-[12px] font-medium text-ink placeholder:text-ink-3 transition duration-200 hover:border-line-hi focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/15"
-                  placeholder="FÁBRICA DE CONTENIDO"
+                  placeholder="FÁBRICA DE CONTEÚDO"
                 />
               </Field>
 
-              <Field label="AUDIENCIA">
-                <SelectField ariaLabel="Audiencia" value={config.audience} onChange={(value) => updateConfig("audience", value)} options={AUDIENCE_OPTIONS} />
+              <Field label="Audiência">
+                <SelectField ariaLabel="Audiência" value={config.audience} onChange={(value) => updateConfig("audience", value)} options={AUDIENCE_OPTIONS} />
               </Field>
 
-              <Field label="ESTILO VISUAL">
+              <Field label="Estilo visual">
                 <SelectField ariaLabel="Estilo visual" value={config.visualStyle} onChange={(value) => updateConfig("visualStyle", value)} options={STYLE_OPTIONS} />
               </Field>
 
-              <Field label="AMBIENTE">
+              <Field label="Ambiente">
                 <SelectField ariaLabel="Ambiente" value={config.mood} onChange={(value) => updateConfig("mood", value)} options={MOOD_OPTIONS} />
               </Field>
 
-              <Field label="FONDO">
-                <SelectField ariaLabel="Fondo" value={config.background} onChange={(value) => updateConfig("background", value)} options={BACKGROUND_OPTIONS} />
+              <Field label="Fundo">
+                <SelectField ariaLabel="Fundo" value={config.background} onChange={(value) => updateConfig("background", value)} options={BACKGROUND_OPTIONS} />
               </Field>
 
-              <Field label="PREFERENCIA DE COLOR">
+              <Field label="Preferência de cor">
                 <div className="relative">
                   <span
                     className="pointer-events-none absolute left-3 top-1/2 h-5 w-7 -translate-y-1/2 rounded-[5px] border border-white/15"
                     style={{ background: `linear-gradient(135deg, ${selectedColor.colors[0]}, ${selectedColor.colors[1]})` }}
                   />
                   <select
-                    aria-label="Preferencia de color"
+                    aria-label="Preferência de cor"
                     value={config.colorPreference}
                     onChange={(event) => updateConfig("colorPreference", event.target.value)}
                     className="h-10 w-full appearance-none rounded-[8px] border border-line bg-card-hi py-0 pl-12 pr-9 text-[12px] font-medium text-ink transition duration-200 hover:border-line-hi focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/15"
@@ -595,7 +598,7 @@ export default function ThumbnailGeneratorPage() {
                 onClick={() => setAdvancedOpen((open) => !open)}
                 className="flex w-full items-center justify-between px-5 py-4 text-[13px] font-medium text-ink-2 transition hover:bg-hover hover:text-ink"
               >
-                Opciones avanzadas
+                Opções avançadas
                 <ChevronDown className={`h-4 w-4 transition ${advancedOpen ? "rotate-180" : ""}`} strokeWidth={1.7} />
               </button>
               {advancedOpen ? (
@@ -603,7 +606,7 @@ export default function ThumbnailGeneratorPage() {
                   <Toggle label="Incluir rostro" checked={config.includeFace} onChange={(value) => updateConfig("includeFace", value)} />
                   <Toggle label="Incluir logo" checked={config.includeLogo} onChange={(value) => updateConfig("includeLogo", value)} />
                   <Toggle label="Incluir texto" checked={config.includeText} onChange={(value) => updateConfig("includeText", value)} />
-                  <Toggle label="Modo text overlay seguro" checked={config.safeTextMode} onChange={(value) => updateConfig("safeTextMode", value)} />
+                  <Toggle label="Modo overlay de texto seguro" checked={config.safeTextMode} onChange={(value) => updateConfig("safeTextMode", value)} />
                   <Field label="Número de variaciones">
                     <SelectField
                       ariaLabel="Número de variaciones"
@@ -626,8 +629,8 @@ export default function ThumbnailGeneratorPage() {
                   <div className="rounded-[10px] border border-line bg-card-hi/45 p-3">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-[12px] font-semibold text-ink">Referencia de imagen</p>
-                        <p className="mt-1 text-[11px] leading-4 text-ink-3">JPG, PNG o WebP. Se usa como referencia real si el provider la soporta.</p>
+                        <p className="text-[12px] font-semibold text-ink">Referência de imagem</p>
+                        <p className="mt-1 text-[11px] leading-4 text-ink-3">JPG, PNG ou WebP. Usada como referência real quando o provedor suporta.</p>
                       </div>
                       <button
                         type="button"
@@ -635,14 +638,14 @@ export default function ThumbnailGeneratorPage() {
                         className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-line bg-white/[0.025] px-3 text-[12px] font-semibold text-ink-2 transition hover:border-line-hi hover:bg-hover hover:text-ink"
                       >
                         <Upload className="h-4 w-4" />
-                        Subir
+                        Enviar
                       </button>
                     </div>
                     <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleReferenceUpload} />
                     {config.referenceImage ? (
                       <div className="mt-3 flex items-center gap-3">
                         <div className="relative aspect-video w-24 overflow-hidden rounded-[8px] border border-line bg-card">
-                          <Image src={config.referenceImage} alt="Referencia de imagen" fill className="object-cover" unoptimized />
+                          <Image src={config.referenceImage} alt="Referência de imagem" fill className="object-cover" unoptimized />
                         </div>
                         <button
                           type="button"
@@ -664,7 +667,7 @@ export default function ThumbnailGeneratorPage() {
                   className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[9px] bg-accent px-5 text-[13px] font-semibold text-accent-fg shadow-[0_12px_34px_rgba(208,111,167,0.18)] transition duration-200 hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" strokeWidth={1.8} />}
-                  {loading ? "Generando..." : "Generar miniatura"}
+                  {loading ? "Gerando..." : "Gerar miniatura"}
                 </button>
               </div>
             </div>
@@ -673,7 +676,7 @@ export default function ThumbnailGeneratorPage() {
           <Card className="min-w-0 p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <h2 className="text-[15px] font-semibold text-ink">Vista previa</h2>
+              <h2 className="text-[15px] font-semibold text-ink">Prévia</h2>
                 <span className="rounded-[7px] border border-line bg-card-hi px-2 py-1 text-[11px] font-medium text-ink-2">1920 × 1080</span>
               </div>
               <button
@@ -683,7 +686,7 @@ export default function ThumbnailGeneratorPage() {
                 className="hidden h-9 items-center gap-2 rounded-[8px] border border-line bg-white/[0.025] px-3 text-[12px] font-semibold text-ink-2 transition hover:border-line-hi hover:bg-hover hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 sm:inline-flex"
               >
                 <Download className="h-4 w-4" />
-                Descargar
+                Baixar
               </button>
             </div>
 
@@ -691,7 +694,7 @@ export default function ThumbnailGeneratorPage() {
               {loading ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-card-hi">
                   <Loader2 className="h-9 w-9 animate-spin text-accent" />
-                  <p className="text-[13px] font-medium text-ink-2">Generando miniatura...</p>
+                  <p className="text-[13px] font-medium text-ink-2">Gerando miniatura...</p>
                 </div>
               ) : selectedUrl ? (
                 <Image src={selectedUrl} alt="Miniatura generada" fill className="object-cover" sizes="(max-width: 1280px) 100vw, 50vw" unoptimized />
@@ -700,9 +703,9 @@ export default function ThumbnailGeneratorPage() {
                   <div className="mb-4 grid h-14 w-14 place-items-center rounded-[12px] border border-line bg-card">
                     <ImagePlus className="h-7 w-7 text-accent" strokeWidth={1.7} />
                   </div>
-                  <p className="text-[15px] font-semibold text-ink">Configura tu miniatura y genera una primera versión.</p>
+                  <p className="text-[15px] font-semibold text-ink">Configure a thumbnail e gere uma primeira versão.</p>
                   <p className="mt-2 max-w-[42ch] text-[13px] leading-5 text-ink-2">
-                    El preview mostrará solo imágenes generadas por tu provider activo. No usamos mocks como resultado real.
+                    A prévia mostra apenas imagens geradas pelo provedor ativo. Não usamos mock como resultado real.
                   </p>
                 </div>
               )}
@@ -714,14 +717,14 @@ export default function ThumbnailGeneratorPage() {
                 className="absolute bottom-3 right-3 inline-flex h-9 items-center gap-2 rounded-[8px] border border-white/15 bg-black/45 px-3 text-[12px] font-semibold text-white backdrop-blur-sm transition hover:bg-black/65 disabled:cursor-not-allowed disabled:opacity-45"
               >
                 <Expand className="h-4 w-4" strokeWidth={1.8} />
-                Pantalla completa
+                Tela cheia
               </button>
             </div>
 
             <div className="mt-5">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-[15px] font-semibold text-ink">Variaciones generadas</h3>
-                {result?.urls?.length ? <span className="text-[12px] text-ink-3">{result.urls.length} disponibles</span> : null}
+                <h3 className="text-[15px] font-semibold text-ink">Variações geradas</h3>
+                {result?.urls?.length ? <span className="text-[12px] text-ink-3">{result.urls.length} disponíveis</span> : null}
               </div>
               <div className="flex gap-3 overflow-x-auto pb-2">
                 {(result?.urls?.length ? result.urls : [null, null, null, null]).map((url, index) => (
@@ -737,7 +740,7 @@ export default function ThumbnailGeneratorPage() {
                     } ${!url ? "cursor-default opacity-55" : ""}`}
                   >
                     {url ? <Image src={url} alt={`Variación ${index + 1}`} fill className="object-cover" sizes="180px" unoptimized /> : null}
-                    {!url ? <span className="absolute inset-0 grid place-items-center text-[11px] text-ink-3">Sin generar</span> : null}
+                    {!url ? <span className="absolute inset-0 grid place-items-center text-[11px] text-ink-3">Não gerada</span> : null}
                     <span className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-[6px] bg-black/45 text-white opacity-90">
                       <MoreHorizontal className="h-3.5 w-3.5" />
                     </span>
@@ -752,7 +755,7 @@ export default function ThumbnailGeneratorPage() {
                   className="inline-flex h-10 items-center gap-2 rounded-[9px] border border-accent/45 bg-card px-5 text-[13px] font-semibold text-accent transition duration-200 hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   {variationsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" strokeWidth={1.8} />}
-                  Generar más variaciones
+                  Gerar mais variações
                 </button>
               </div>
             </div>
@@ -761,13 +764,13 @@ export default function ThumbnailGeneratorPage() {
           <Card className="min-w-0 p-5">
             <div className="mb-5 flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-accent" strokeWidth={1.8} />
-              <h2 className="text-[15px] font-semibold text-ink">Asistente de IA</h2>
+              <h2 className="text-[15px] font-semibold text-ink">Assistente de IA</h2>
             </div>
 
             <div className="space-y-4">
-              <AssistantPanel title="Sugerencia de IA" icon={<Lightbulb className="h-4 w-4" strokeWidth={1.8} />}>
+              <AssistantPanel title="Sugestão de IA" icon={<Lightbulb className="h-4 w-4" strokeWidth={1.8} />}>
                 <p className="text-[12px] leading-5 text-ink-2">
-                  Los rostros con expresión sorprendida + texto grande en alto contraste pueden aumentar el CTR hasta un 32%.
+                  Rosto expressivo, texto grande e alto contraste costumam melhorar a leitura no feed.
                 </p>
                 <button
                   type="button"
@@ -775,7 +778,7 @@ export default function ThumbnailGeneratorPage() {
                   className="mt-4 inline-flex h-9 items-center gap-2 rounded-[8px] border border-accent/25 bg-accent-soft px-3 text-[12px] font-semibold text-accent-hi transition hover:border-accent/45 hover:bg-accent-soft/80"
                 >
                   <Sparkles className="h-4 w-4" strokeWidth={1.8} />
-                  Aplicar sugerencia
+                  Aplicar sugestão
                 </button>
               </AssistantPanel>
 
@@ -785,7 +788,7 @@ export default function ThumbnailGeneratorPage() {
                     <button
                       type="button"
                       key={`${color}-${index}`}
-                      aria-label={`Aplicar color ${index + 1}`}
+                      aria-label={`Aplicar cor ${index + 1}`}
                       onClick={() => {
                         updateConfig("colorPreference", selectedColor.id);
                         showStatus("Paleta aplicada");
@@ -816,9 +819,9 @@ export default function ThumbnailGeneratorPage() {
                 </div>
               </AssistantPanel>
 
-              <AssistantPanel title="Buenas prácticas" icon={<Info className="h-4 w-4" strokeWidth={1.8} />}>
+              <AssistantPanel title="Boas práticas" icon={<Info className="h-4 w-4" strokeWidth={1.8} />}>
                 <ul className="space-y-2">
-                  {["Usa 3–6 palabras máximo", "Alto contraste de color", "Rostro + emoción = más clics", "Texto legible en móvil"].map((tip) => (
+                  {["Use no máximo 3-6 palavras", "Alto contraste de cor", "Rosto + emoção aumenta leitura", "Texto legível no celular"].map((tip) => (
                     <li key={tip} className="flex items-center gap-2 text-[12px] text-ink-2">
                       <Check className="h-3.5 w-3.5 shrink-0 rounded-full text-ok" strokeWidth={2.3} />
                       {tip}
@@ -827,7 +830,7 @@ export default function ThumbnailGeneratorPage() {
                 </ul>
                 <div className="mt-5 flex items-start gap-2 text-[11px] leading-4 text-ink-3">
                   <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  <span>Consejos basados en análisis de miles de miniaturas exitosas.</span>
+                  <span>Regras baseadas em padrões de thumbnails com boa leitura e intenção de clique.</span>
                 </div>
               </AssistantPanel>
             </div>
@@ -841,27 +844,27 @@ export default function ThumbnailGeneratorPage() {
             type="button"
             onClick={() => setFullscreenOpen(false)}
             className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-[9px] border border-white/15 bg-white/10 text-white transition hover:bg-white/15"
-            aria-label="Cerrar pantalla completa"
+            aria-label="Fechar tela cheia"
           >
             <X className="h-5 w-5" />
           </button>
           <div className="relative aspect-video w-full max-w-6xl overflow-hidden rounded-[14px] border border-white/15 bg-card">
-            <Image src={selectedUrl} alt="Miniatura en pantalla completa" fill className="object-contain" unoptimized />
+            <Image src={selectedUrl} alt="Miniatura em tela cheia" fill className="object-contain" unoptimized />
           </div>
         </div>
       ) : null}
 
       {historyOpen ? (
         <div className="fixed inset-0 z-[70] flex justify-end bg-black/55 backdrop-blur-sm" role="dialog" aria-modal="true">
-          <button type="button" aria-label="Cerrar historial" className="absolute inset-0 cursor-default" onClick={() => setHistoryOpen(false)} />
+          <button type="button" aria-label="Fechar histórico" className="absolute inset-0 cursor-default" onClick={() => setHistoryOpen(false)} />
           <aside className="relative h-full w-full max-w-[380px] border-l border-line bg-card p-5 shadow-2xl">
             <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-[16px] font-semibold text-ink">Historial</h2>
+              <h2 className="text-[16px] font-semibold text-ink">Histórico</h2>
               <button
                 type="button"
                 onClick={() => setHistoryOpen(false)}
                 className="grid h-8 w-8 place-items-center rounded-[8px] border border-line text-ink-2 transition hover:bg-hover hover:text-ink"
-                aria-label="Cerrar historial"
+                aria-label="Fechar histórico"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -879,17 +882,17 @@ export default function ThumbnailGeneratorPage() {
                     className="flex w-full items-center gap-3 rounded-[10px] border border-line bg-card-hi/45 p-2 text-left transition hover:border-line-hi hover:bg-hover"
                   >
                     <span className="relative aspect-video w-20 shrink-0 overflow-hidden rounded-[7px] border border-line">
-                      <Image src={url} alt={`Historial ${index + 1}`} fill className="object-cover" unoptimized />
+                      <Image src={url} alt={`Histórico ${index + 1}`} fill className="object-cover" unoptimized />
                     </span>
                     <span>
                       <span className="block text-[13px] font-semibold text-ink">Miniatura generada v{index + 1}</span>
-                      <span className="mt-1 block text-[12px] text-ink-3">Sesión actual</span>
+                      <span className="mt-1 block text-[12px] text-ink-3">Sessão atual</span>
                     </span>
                   </button>
                 ))
               ) : (
                 <div className="rounded-[10px] border border-line bg-card-hi/45 p-4 text-[13px] leading-5 text-ink-2">
-                  Aún no hay miniaturas generadas en esta sesión.
+                  Ainda não há miniaturas geradas nesta sessão.
                 </div>
               )}
             </div>

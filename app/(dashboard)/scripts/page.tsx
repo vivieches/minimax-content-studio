@@ -39,23 +39,23 @@ type Diagnostic = {
 };
 
 const INITIAL_INSTRUCTIONS =
-  "Crea un guion para un video de YouTube sobre hábitos de productividad para estudiantes universitarios. Tono motivacional y cercano. Incluye ejemplos prácticos.";
+  "Crie um roteiro para um vídeo de YouTube sobre hábitos de produtividade para estudantes universitários. Tom motivacional e próximo, com exemplos práticos.";
 
 const VARIABLES = [
   ["{{TEMA}}", "Tema principal"],
-  ["{{AUDIENCIA}}", "Audiencia objetivo"],
-  ["{{TONO}}", "Tono de comunicación"],
-  ["{{DURACION}}", "Duración estimada"],
+  ["{{PUBLICO}}", "Público-alvo"],
+  ["{{TONO}}", "Tom de comunicação"],
+  ["{{DURACAO}}", "Duração estimada"],
 ] as const;
 
 const VERSIONS = [
-  ["Guion - Hábitos de productividad v2", "Hace 2 horas"],
-  ["Guion - Hábitos de productividad v1", "Hace 1 día"],
-  ["Guion - Primera versión", "Hace 2 días"],
+  ["Roteiro - Hábitos de produtividade v2", "Há 2 horas"],
+  ["Roteiro - Hábitos de produtividade v1", "Há 1 dia"],
+  ["Roteiro - Primeira versão", "Há 2 dias"],
 ] as const;
 
 const DEFAULT_BRAND_VOICE =
-  "Usa un lenguaje claro, directo y empático. Evita tecnicismos innecesarios y habla como si conversaras con tu audiencia.";
+  "Use linguagem clara, direta e empática. Evite tecnicismos desnecessários e fale como se estivesse conversando com o público.";
 
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
@@ -199,8 +199,8 @@ function IconButton({
 
 export default function ScriptGeneratorPage() {
   const [objective, setObjective] = useState("Informar");
-  const [topic, setTopic] = useState("Productividad personal");
-  const [audience, setAudience] = useState("Estudiantes universitarios");
+  const [topic, setTopic] = useState("Produtividade pessoal");
+  const [audience, setAudience] = useState("Estudantes universitários");
   const [duration, setDuration] = useState("3 - 5 minutos");
   const [instructions, setInstructions] = useState(INITIAL_INSTRUCTIONS);
   const [brandVoice, setBrandVoice] = useState(DEFAULT_BRAND_VOICE);
@@ -255,10 +255,12 @@ export default function ScriptGeneratorPage() {
 
   function resolveVariables(text: string) {
     return text
-      .replaceAll("{{TEMA}}", topic || "tema no definido")
-      .replaceAll("{{AUDIENCIA}}", audience || "audiencia no definida")
-      .replaceAll("{{TONO}}", brandVoice || "tono no definido")
-      .replaceAll("{{DURACION}}", duration || "duración no definida");
+      .replaceAll("{{TEMA}}", topic || "tema não definido")
+      .replaceAll("{{PUBLICO}}", audience || "público não definido")
+      .replaceAll("{{AUDIENCIA}}", audience || "público não definido")
+      .replaceAll("{{TONO}}", brandVoice || "tom não definido")
+      .replaceAll("{{DURACAO}}", duration || "duração não definida")
+      .replaceAll("{{DURACION}}", duration || "duração não definida");
   }
 
   async function saveBrandKit(patch: Record<string, unknown>) {
@@ -268,7 +270,7 @@ export default function ScriptGeneratorPage() {
       body: JSON.stringify(patch),
     });
     const data = await response.json();
-    if (!data?.ok) throw new Error(data?.error || "No se pudo guardar la voz de marca.");
+    if (!data?.ok) throw new Error(data?.error || "Não foi possível salvar a voz da marca.");
     if (Array.isArray(data.brandKit?.references)) {
       setReferences(data.brandKit.references.map((reference: ReferenceItem) => ({
         id: reference.id,
@@ -287,7 +289,7 @@ export default function ScriptGeneratorPage() {
 
   async function handleGenerate() {
     if (!instructions.trim()) {
-      setError("Agrega instrucciones para generar el guion.");
+      setError("Adicione instruções para gerar o roteiro.");
       return;
     }
 
@@ -298,13 +300,13 @@ export default function ScriptGeneratorPage() {
       const briefing = [
         `OBJETIVO: ${objective}`,
         `TEMA: ${topic}`,
-        `AUDIENCIA: ${audience}`,
-        `DURACION: ${duration}`,
+        `PUBLICO_ALVO: ${audience}`,
+        `DURACAO_APROXIMADA: ${duration}`,
         `VOZ_DE_MARCA: ${brandVoice}`,
         references.length
           ? `REFERENCIAS:\n${references.map((reference, index) => `${index + 1}. ${reference.title}\n${reference.content}`).join("\n\n")}`
-          : "REFERENCIAS: ninguna",
-        `INSTRUCCIONES: ${resolveVariables(instructions)}`,
+          : "REFERENCIAS: nenhuma",
+        `INSTRUCOES: ${resolveVariables(instructions)}`,
       ].join("\n");
 
       const response = await fetch("/api/minimax/script", {
@@ -315,14 +317,14 @@ export default function ScriptGeneratorPage() {
 
       const data = await response.json();
       if (!response.ok || data?.error) {
-        throw new Error(data?.details || data?.error || "No se pudo generar el guion.");
+        throw new Error(data?.details || data?.error || "Não foi possível gerar o roteiro.");
       }
 
       const script = data?.script || data?.content;
-      if (!script) throw new Error("El provider respondió sin contenido de guion.");
+      if (!script) throw new Error("O provider respondeu sem conteúdo de roteiro.");
       setResult([
         {
-          title: String(data?.title || "Guion generado"),
+          title: String(data?.title || "Roteiro gerado"),
           time: duration,
           body: String(script),
         },
@@ -334,9 +336,9 @@ export default function ScriptGeneratorPage() {
       }).catch(() => undefined);
       const diagnostics = Array.isArray(data?.diagnostics) ? (data.diagnostics as Diagnostic[]) : [];
       const visibleDiagnostic = diagnostics.find((diagnostic) => diagnostic.severity !== "info");
-      showNotice(visibleDiagnostic ? [visibleDiagnostic.message, visibleDiagnostic.action].filter(Boolean).join(" ") : "Guion generado");
+      showNotice(visibleDiagnostic ? [visibleDiagnostic.message, visibleDiagnostic.action].filter(Boolean).join(" ") : "Roteiro gerado");
     } catch (generateError) {
-      setError(generateError instanceof Error ? generateError.message : "No se pudo generar el guion.");
+      setError(generateError instanceof Error ? generateError.message : "Não foi possível gerar o roteiro.");
     } finally {
       setLoading(false);
     }
@@ -356,7 +358,7 @@ export default function ScriptGeneratorPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "script",
-          title: `Script - ${topic || "Open Studio"}`,
+          title: `Roteiro - ${topic || "Open Studio"}`,
           description: instructions.slice(0, 500),
           content: resultText,
           metadata: { objective, topic, audience, duration, brandVoice, references, savedFrom: "scripts-page" },
@@ -365,23 +367,23 @@ export default function ScriptGeneratorPage() {
         }),
       });
       const data = await response.json();
-      if (!data.ok) throw new Error(data.error || "No se pudo guardar.");
-      showNotice("Guardado en Assets");
+      if (!data.ok) throw new Error(data.error || "Não foi possível salvar.");
+      showNotice("Salvo em Arquivos");
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "No se pudo guardar el guion.");
+      setError(saveError instanceof Error ? saveError.message : "Não foi possível salvar o roteiro.");
     }
   }
 
   function handleNewScript() {
     setObjective("Informar");
     setTopic("");
-    setAudience("Estudiantes universitarios");
+    setAudience("Estudantes universitários");
     setDuration("3 - 5 minutos");
     setInstructions("");
     setReferences([]);
     setResult(null);
     setError("");
-    showNotice("Nuevo guion listo");
+    showNotice("Novo roteiro pronto");
   }
 
   function insertVariable(variable: string) {
@@ -389,11 +391,11 @@ export default function ScriptGeneratorPage() {
   }
 
   function addCustomVariable() {
-    const name = window.prompt("Nombre de la variable. Ejemplo: CTA_FINAL");
+    const name = window.prompt("Nome da variável. Exemplo: CTA_FINAL");
     if (!name?.trim()) return;
     const token = `{{${name.trim().toUpperCase().replaceAll(/\s+/g, "_")}}}`;
     insertVariable(token);
-    showNotice(`Variable ${token} insertada`);
+    showNotice(`Variável ${token} inserida`);
   }
 
   function addReference() {
@@ -401,11 +403,11 @@ export default function ScriptGeneratorPage() {
   }
 
   async function addReferenceAsync() {
-    const content = window.prompt("Pega un link, nota o fragmento de guion para usar como referencia.");
+    const content = window.prompt("Cole um link, nota ou trecho de roteiro para usar como referência.");
     if (!content?.trim()) return;
     const trimmed = content.trim();
     const isUrl = /^https?:\/\//i.test(trimmed);
-    const title = isUrl ? trimmed : `Referencia ${references.length + 1}`;
+    const title = isUrl ? trimmed : `Referência ${references.length + 1}`;
     try {
       const response = await fetch("/api/brand-kit", {
         method: "POST",
@@ -418,11 +420,11 @@ export default function ScriptGeneratorPage() {
         }),
       });
       const data = await response.json();
-      if (!data?.ok) throw new Error(data?.error || "No se pudo agregar la referencia.");
+      if (!data?.ok) throw new Error(data?.error || "Não foi possível adicionar a referência.");
       setReferences(data.brandKit.references);
-      showNotice("Referencia agregada");
+      showNotice("Referência adicionada");
     } catch (referenceError) {
-      setError(referenceError instanceof Error ? referenceError.message : "No se pudo agregar la referencia.");
+      setError(referenceError instanceof Error ? referenceError.message : "Não foi possível adicionar a referência.");
     }
   }
 
@@ -434,11 +436,11 @@ export default function ScriptGeneratorPage() {
     try {
       const response = await fetch(`/api/brand-kit?id=${encodeURIComponent(referenceId)}`, { method: "DELETE" });
       const data = await response.json();
-      if (!data?.ok) throw new Error(data?.error || "No se pudo quitar la referencia.");
+      if (!data?.ok) throw new Error(data?.error || "Não foi possível remover a referência.");
       setReferences(data.brandKit.references);
-      showNotice("Referencia removida");
+      showNotice("Referência removida");
     } catch (referenceError) {
-      setError(referenceError instanceof Error ? referenceError.message : "No se pudo quitar la referencia.");
+      setError(referenceError instanceof Error ? referenceError.message : "Não foi possível remover a referência.");
     }
   }
 
@@ -447,28 +449,31 @@ export default function ScriptGeneratorPage() {
       <div className="mx-auto flex w-full max-w-[1540px] flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8 lg:py-7 2xl:px-10">
         <header className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="text-[27px] font-bold leading-tight tracking-[-0.035em] text-ink">Guion</h1>
+            <h1 className="text-[27px] font-bold leading-tight tracking-[-0.035em] text-ink">Roteiro</h1>
             <nav className="mt-3 flex items-center gap-2 text-[13px] text-ink-2" aria-label="Breadcrumb">
-              <span>Inicio</span>
+              <span>Início</span>
               <ChevronRight className="h-3.5 w-3.5 text-ink-3" strokeWidth={1.8} />
-              <span className="text-ink-2">Guion</span>
+              <span className="text-ink-2">Roteiro</span>
             </nav>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
             <label className="relative block min-w-0 sm:w-[280px] xl:w-[340px]">
-              <span className="sr-only">Buscar en guiones...</span>
+              <span className="sr-only">Buscar em roteiros...</span>
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-2" strokeWidth={1.7} />
               <input
                 type="search"
-                placeholder="Buscar en guiones..."
+                placeholder="Buscar em roteiros..."
+                readOnly
+                onFocus={() => window.dispatchEvent(new Event("open-studio:quick-switcher"))}
+                onClick={() => window.dispatchEvent(new Event("open-studio:quick-switcher"))}
                 className="h-11 w-full rounded-[9px] border border-line bg-card px-11 pr-16 text-[13px] text-ink placeholder:text-ink-2 transition duration-200 hover:border-line-hi focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/15"
               />
               <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-[6px] border border-line bg-card-hi px-1.5 py-0.5 text-[11px] font-medium text-ink-2">
-                ⌘ K
+                Ctrl K
               </kbd>
             </label>
-            <IconButton label="Notificaciones">
+            <IconButton label="Notificações">
               <span className="relative">
                 <Bell className="h-4 w-4" strokeWidth={1.8} />
                 <span className="absolute -right-0.5 -top-1 h-2 w-2 rounded-full bg-accent ring-2 ring-card" />
@@ -481,11 +486,11 @@ export default function ScriptGeneratorPage() {
                 className="inline-flex h-11 items-center justify-center gap-2 bg-accent px-5 text-[13px] font-semibold text-accent-fg transition duration-200 hover:bg-accent-hi"
               >
                 <Plus className="h-4 w-4" strokeWidth={1.9} />
-                Nuevo guion
+                Novo roteiro
               </button>
               <button
                 type="button"
-                aria-label="Opciones de nuevo guion"
+                aria-label="Opções de novo roteiro"
                 className="grid h-11 w-11 place-items-center border-l border-white/15 bg-accent text-accent-fg transition duration-200 hover:bg-accent-hi"
               >
                 <ChevronDown className="h-4 w-4" strokeWidth={1.9} />
@@ -511,8 +516,8 @@ export default function ScriptGeneratorPage() {
           <div className="min-w-0 space-y-5">
             <Card className="p-5 sm:p-6">
               <SectionHeader
-                title="1. Describe tu guion"
-                description="Cuéntale a la IA qué necesitas y cómo debe ser tu guion."
+                title="1. Descreva seu roteiro"
+                description="Diga à IA o que você precisa e como o roteiro deve sair."
               />
 
               <div className="mt-7 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -521,7 +526,7 @@ export default function ScriptGeneratorPage() {
                     ariaLabel="Objetivo"
                     value={objective}
                     onChange={setObjective}
-                    options={["Informar", "Educar", "Vender", "Entretener"]}
+                    options={["Informar", "Educar", "Vender", "Entreter"]}
                   />
                 </FieldShell>
                 <FieldShell label="Tema">
@@ -529,20 +534,20 @@ export default function ScriptGeneratorPage() {
                     value={topic}
                     onChange={(event) => setTopic(event.target.value)}
                     className="h-11 w-full rounded-[8px] border border-line bg-card-hi px-4 text-[13px] font-medium text-ink placeholder:text-ink-3 transition duration-200 hover:border-line-hi focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/15"
-                    placeholder="Productividad personal"
+                    placeholder="Produtividade pessoal"
                   />
                 </FieldShell>
-                <FieldShell label="Audiencia">
+                <FieldShell label="Público">
                   <SelectControl
-                    ariaLabel="Audiencia"
+                    ariaLabel="Público"
                     value={audience}
                     onChange={setAudience}
-                    options={["Estudiantes universitarios", "Creadores de contenido", "Profesionales", "Emprendedores"]}
+                    options={["Estudantes universitários", "Criadores de conteúdo", "Profissionais", "Empreendedores"]}
                   />
                 </FieldShell>
-                <FieldShell label="Duración (aprox.)">
+                <FieldShell label="Duração aproximada">
                   <SelectControl
-                    ariaLabel="Duración aproximada"
+                    ariaLabel="Duração aproximada"
                     value={duration}
                     onChange={setDuration}
                     options={["1 - 3 minutos", "3 - 5 minutos", "5 - 8 minutos", "8 - 10 minutos"]}
@@ -553,10 +558,10 @@ export default function ScriptGeneratorPage() {
               <div className="mt-6">
                 <div className="mb-2 flex flex-col gap-1">
                   <label htmlFor="script-instructions" className="text-[12px] font-semibold text-ink">
-                    Instrucciones
+                    Instruções
                   </label>
                   <p className="text-[12px] leading-5 text-ink-2">
-                    Sé específico sobre el enfoque, tono, estilo y puntos clave que debe incluir.
+                    Seja específico sobre foco, tom, estilo e pontos essenciais.
                   </p>
                 </div>
                 <textarea
@@ -577,7 +582,7 @@ export default function ScriptGeneratorPage() {
                     className="inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-accent px-6 text-[13px] font-semibold text-accent-fg shadow-[0_10px_28px_rgba(208,111,167,0.16)] transition duration-200 hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" strokeWidth={1.9} />}
-                    {loading ? "Generando..." : "Generar guion"}
+                    {loading ? "Gerando..." : "Gerar roteiro"}
                   </button>
                 </div>
               </div>
@@ -586,7 +591,7 @@ export default function ScriptGeneratorPage() {
             <Card className="p-5 sm:p-6">
               <SectionHeader
                 title="2. Resultado"
-                description="Revisa y edita el guion generado. Puedes copiarlo o guardarlo en tu proyecto."
+                description="Revise e edite o roteiro gerado. Você pode copiar ou salvar no projeto."
                 actions={
                   <>
                     <SecondaryButton onClick={handleCopy} disabled={!result}>
@@ -595,7 +600,7 @@ export default function ScriptGeneratorPage() {
                     </SecondaryButton>
                     <SecondaryButton onClick={handleSave} disabled={!result}>
                       <Save className="h-4 w-4 text-ink-2" strokeWidth={1.8} />
-                      Guardar
+                      Salvar
                     </SecondaryButton>
                   </>
                 }
@@ -635,7 +640,7 @@ export default function ScriptGeneratorPage() {
                         type="button"
                         className="inline-flex h-10 items-center gap-2 rounded-[8px] border border-line bg-white/[0.025] px-5 text-[13px] font-semibold text-ink-2 transition duration-200 hover:border-line-hi hover:bg-hover hover:text-ink"
                       >
-                        Mostrar más
+                        Mostrar mais
                         <ChevronDown className="h-4 w-4" strokeWidth={1.8} />
                       </button>
                     </div>
@@ -645,9 +650,9 @@ export default function ScriptGeneratorPage() {
                     <div className="mb-4 grid h-12 w-12 place-items-center rounded-[10px] border border-line bg-card-hi">
                       <FileText className="h-5 w-5 text-accent" strokeWidth={1.7} />
                     </div>
-                    <p className="text-[14px] font-semibold text-ink">Aún no hay resultado</p>
+                    <p className="text-[14px] font-semibold text-ink">Ainda não há resultado</p>
                     <p className="mt-2 max-w-[34ch] text-[13px] leading-5 text-ink-2">
-                      Completa las instrucciones y genera una primera versión para revisarla aquí.
+                      Preencha as instruções e gere uma primeira versão para revisar aqui.
                     </p>
                   </div>
                 )}
@@ -657,14 +662,14 @@ export default function ScriptGeneratorPage() {
 
           <aside className="min-w-0 space-y-4">
             <SidebarCard
-              title="Variables"
+              title="Variáveis"
               action={
-                <IconButton label="Agregar variable" onClick={addCustomVariable}>
+                <IconButton label="Adicionar variável" onClick={addCustomVariable}>
                   <Plus className="h-4 w-4" strokeWidth={1.8} />
                 </IconButton>
               }
             >
-              <p className="mb-4 text-[13px] leading-5 text-ink-2">Inserta información dinámica en tu guion.</p>
+              <p className="mb-4 text-[13px] leading-5 text-ink-2">Insira informações dinâmicas no roteiro.</p>
               <div className="space-y-3">
                 {VARIABLES.map(([variable, description]) => (
                   <button
@@ -682,10 +687,10 @@ export default function ScriptGeneratorPage() {
               </div>
               <button
                 type="button"
-                onClick={() => showNotice("Variables activas: tema, audiencia, tono y duración. Las personalizadas se insertan como tokens.")}
+                onClick={() => showNotice("Variáveis ativas: tema, público, tom e duração. As personalizadas entram como tokens.")}
                 className="mt-5 inline-flex items-center gap-2 text-[13px] font-semibold text-accent transition hover:text-accent-hi"
               >
-                Ver todas las variables
+                Ver todas as variáveis
                 <ChevronRight className="h-4 w-4" strokeWidth={1.8} />
               </button>
             </SidebarCard>
@@ -693,7 +698,7 @@ export default function ScriptGeneratorPage() {
             <SidebarCard
               title="Voz de marca"
               action={
-                <IconButton label="Editar voz de marca" onClick={() => setEditingBrandVoice((current) => !current)}>
+                <IconButton label="Editar voz da marca" onClick={() => setEditingBrandVoice((current) => !current)}>
                   <Edit3 className="h-4 w-4" strokeWidth={1.8} />
                 </IconButton>
               }
@@ -713,21 +718,21 @@ export default function ScriptGeneratorPage() {
                 onClick={() => {
                   if (editingBrandVoice) {
                     void saveBrandKit({ brandVoice, references })
-                      .then(() => showNotice("Voz de marca guardada"))
-                      .catch((saveError) => setError(saveError instanceof Error ? saveError.message : "No se pudo guardar."));
+                      .then(() => showNotice("Voz da marca salva"))
+                      .catch((saveError) => setError(saveError instanceof Error ? saveError.message : "Não foi possível salvar."));
                   }
                   setEditingBrandVoice((current) => !current);
                 }}
                 className="mt-5 inline-flex items-center gap-2 text-[13px] font-semibold text-accent transition hover:text-accent-hi"
               >
-                {editingBrandVoice ? "Cerrar edición" : "Editar voz de marca"}
+                {editingBrandVoice ? "Fechar edição" : "Editar voz da marca"}
                 <ChevronRight className="h-4 w-4" strokeWidth={1.8} />
               </button>
             </SidebarCard>
 
-            <SidebarCard title="Referencias">
+            <SidebarCard title="Referências">
               <p className="text-[13px] leading-5 text-ink-2">
-                Archivos, guiones o links que querés que la IA tenga en cuenta.
+                Arquivos, roteiros ou links que a IA deve considerar.
               </p>
               {references.length ? (
                 <div className="mt-4 space-y-2">
@@ -745,7 +750,7 @@ export default function ScriptGeneratorPage() {
                         onClick={() => removeReference(reference.id)}
                         className="shrink-0 text-[11px] font-semibold text-ink-3 transition hover:text-danger"
                       >
-                        Quitar
+                        Remover
                       </button>
                     </div>
                   ))}
@@ -757,11 +762,11 @@ export default function ScriptGeneratorPage() {
                 className="mt-4 inline-flex h-10 items-center gap-2 rounded-[8px] border border-line bg-white/[0.025] px-4 text-[13px] font-semibold text-ink-2 transition duration-200 hover:border-line-hi hover:bg-hover hover:text-ink"
               >
                 <Plus className="h-4 w-4" strokeWidth={1.8} />
-                Agregar referencia
+                Adicionar referência
               </button>
             </SidebarCard>
 
-            <SidebarCard title="Historial de versiones">
+            <SidebarCard title="Histórico de versões">
               <div className="space-y-1">
                 {VERSIONS.map(([version, time]) => (
                   <button
@@ -778,7 +783,7 @@ export default function ScriptGeneratorPage() {
                 ))}
               </div>
               <button type="button" className="mt-4 inline-flex items-center gap-2 text-[13px] font-semibold text-accent transition hover:text-accent-hi">
-                Ver todas las versiones
+                Ver todas as versões
                 <ChevronRight className="h-4 w-4" strokeWidth={1.8} />
               </button>
             </SidebarCard>

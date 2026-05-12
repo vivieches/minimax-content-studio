@@ -12,6 +12,7 @@ import {
   updateProject,
   writeProjectFile,
 } from "../projects/store";
+import { verifyLocalNodeRequest } from "../security/localAuth";
 
 type JsonValue = Record<string, unknown> | unknown[];
 
@@ -31,10 +32,22 @@ async function readBody(request: IncomingMessage) {
   return Buffer.concat(chunks);
 }
 
-async function readJsonBody(request: IncomingMessage) {
-  const body = await readBody(request);
+function parseJsonBody(body: Buffer) {
   if (!body.length) return {};
   return JSON.parse(body.toString("utf8"));
+}
+
+async function requireLocalMutation(
+  request: IncomingMessage,
+  response: ServerResponse,
+  context: DaemonContext,
+  url: URL,
+  body: Buffer = Buffer.alloc(0),
+) {
+  const auth = await verifyLocalNodeRequest(request, url, context, body);
+  if (auth.ok) return true;
+  sendJson(response, auth.status, { ok: false, error: auth.error });
+  return false;
 }
 
 function decodePathname(pathname: string) {
@@ -62,7 +75,9 @@ export async function handleProjectRoutes(
       return true;
     }
     if (request.method === "POST") {
-      const project = await createProject(context, await readJsonBody(request));
+      const body = await readBody(request);
+      if (!(await requireLocalMutation(request, response, context, url, body))) return true;
+      const project = await createProject(context, parseJsonBody(body));
       sendJson(response, 200, { project });
       return true;
     }
@@ -84,12 +99,15 @@ export async function handleProjectRoutes(
       return true;
     }
     if (request.method === "PATCH") {
-      const project = await updateProject(context, projectId, await readJsonBody(request));
+      const body = await readBody(request);
+      if (!(await requireLocalMutation(request, response, context, url, body))) return true;
+      const project = await updateProject(context, projectId, parseJsonBody(body));
       if (!project) sendJson(response, 404, { ok: false, error: "project_not_found" });
       else sendJson(response, 200, { project });
       return true;
     }
     if (request.method === "DELETE") {
+      if (!(await requireLocalMutation(request, response, context, url))) return true;
       await deleteProject(context, projectId);
       sendJson(response, 200, { ok: true });
       return true;
@@ -110,7 +128,9 @@ export async function handleProjectRoutes(
   if (url.pathname.startsWith(filePrefix)) {
     const relPath = decodePathname(url.pathname.slice(filePrefix.length));
     if (request.method === "PUT") {
-      const file = await writeProjectFile(context, projectId, relPath, await readBody(request));
+      const body = await readBody(request);
+      if (!(await requireLocalMutation(request, response, context, url, body))) return true;
+      const file = await writeProjectFile(context, projectId, relPath, body);
       sendJson(response, 200, { file });
       return true;
     }
@@ -124,6 +144,7 @@ export async function handleProjectRoutes(
       return true;
     }
     if (request.method === "DELETE") {
+      if (!(await requireLocalMutation(request, response, context, url))) return true;
       await deleteProjectFile(context, projectId, relPath);
       sendJson(response, 200, { ok: true });
       return true;

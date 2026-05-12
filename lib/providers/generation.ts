@@ -28,6 +28,7 @@ import { renderResearchForPrompt, writeResearchReport } from "@/daemon/research/
 import { searchResearch } from "@/daemon/research/tavily";
 import type { ResearchFindings } from "@/daemon/research/types";
 import { parseTitlePackResponse, renderTitleRepairPrompt, type TitleCandidate } from "@/daemon/titles/scoring";
+import { createProfessionalPackageExport } from "@/daemon/export/package";
 import { DATA_DIR } from "@/lib/storage/db";
 import { getSettings } from "@/lib/storage/settings";
 import { getAdapterForProvider } from "./registry";
@@ -781,7 +782,10 @@ export async function generateContentPackage(params: {
     }
   }
 
-  const exportRecord = saveToAssets
+  const professionalExport = saveToAssets && projectContext
+    ? await createProfessionalPackageExport({ projectId, context: projectContext })
+    : null;
+  const exportRecord = professionalExport?.exportRecord ?? (saveToAssets
     ? await createExport({
         title,
         type: "package",
@@ -791,7 +795,7 @@ export async function generateContentPackage(params: {
         format: "package",
         metadata: { briefing, outputs, projectId },
       })
-    : null;
+    : null);
 
   return {
     ok: true,

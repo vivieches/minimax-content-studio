@@ -333,6 +333,26 @@ export default function PipelinePage() {
           critiqueError instanceof Error ? critiqueError.message : "Falha ao criticar pacote.",
         ]);
       }
+
+      if (data.projectId) {
+        try {
+          const exportResponse = await fetch("/api/exports", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ projectId: data.projectId }),
+          });
+          const exportData = (await exportResponse.json()) as { ok?: boolean; export?: { id: string }; error?: string };
+          if (!exportResponse.ok || !exportData.ok || !exportData.export?.id) {
+            throw new Error(exportData.error || "Falha ao exportar pacote.");
+          }
+          setResult((current) => current ? { ...current, exportId: exportData.export!.id } : current);
+        } catch (exportError) {
+          setModuleErrors((current) => [
+            ...current,
+            exportError instanceof Error ? exportError.message : "Falha ao exportar pacote.",
+          ]);
+        }
+      }
     } catch (pipelineError) {
       setError(pipelineError instanceof Error ? pipelineError.message : "Não foi possível gerar o pacote.");
     } finally {

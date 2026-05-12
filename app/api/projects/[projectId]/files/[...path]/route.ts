@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { createDaemonContext } from "@/daemon/context";
 import { deleteProjectFile, readProjectFile, writeProjectFile } from "@/daemon/projects/store";
+import { verifyLocalRequest } from "@/daemon/security/localAuth";
 import { DATA_DIR } from "@/lib/storage/db";
 
 type Context = { params: Promise<{ projectId: string; path: string[] }> };
@@ -35,6 +36,10 @@ export async function PUT(request: Request, { params }: Context) {
     const { projectId, path } = await params;
     const context = createDaemonContext({ storageDir: DATA_DIR });
     const bytes = Buffer.from(await request.arrayBuffer());
+    const auth = await verifyLocalRequest(request, context, bytes);
+    if (!auth.ok) {
+      return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
+    }
     const file = await writeProjectFile(context, projectId, pathname(path), bytes);
     return NextResponse.json({ ok: true, file });
   } catch (error) {
@@ -45,10 +50,14 @@ export async function PUT(request: Request, { params }: Context) {
   }
 }
 
-export async function DELETE(_request: Request, { params }: Context) {
+export async function DELETE(request: Request, { params }: Context) {
   try {
     const { projectId, path } = await params;
     const context = createDaemonContext({ storageDir: DATA_DIR });
+    const auth = await verifyLocalRequest(request, context);
+    if (!auth.ok) {
+      return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
+    }
     await deleteProjectFile(context, projectId, pathname(path));
     return NextResponse.json({ ok: true });
   } catch (error) {

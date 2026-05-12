@@ -24,24 +24,24 @@ const cormorant = Cormorant_Garamond({
 
 export const metadata: Metadata = {
   title: {
-    default: "Open Studio — AI Creative Studio for Modern Creators",
+    default: "Open Studio — Estúdio criativo para criadores modernos",
     template: "%s — Open Studio",
   },
   description:
-    "From idea to content. Generate scripts, thumbnails and content packages with your own AI providers.",
+    "Da ideia ao pacote final. Gere roteiros, miniaturas e conteúdo com seus próprios provedores de IA.",
   openGraph: {
     type: "website",
     siteName: "Open Studio",
-    title: "Open Studio — AI Creative Studio for Modern Creators",
+    title: "Open Studio — Estúdio criativo para criadores modernos",
     description:
-      "From idea to content. Generate scripts, thumbnails and content packages with your own AI providers.",
+      "Da ideia ao pacote final. Gere roteiros, miniaturas e conteúdo com seus próprios provedores de IA.",
   },
   twitter: {
     card: "summary_large_image",
     creator: "@openstudio_ai",
-    title: "Open Studio — AI Creative Studio for Modern Creators",
+    title: "Open Studio — Estúdio criativo para criadores modernos",
     description:
-      "From idea to content. Generate scripts, thumbnails and content packages with your own AI providers.",
+      "Da ideia ao pacote final. Gere roteiros, miniaturas e conteúdo com seus próprios provedores de IA.",
   },
   icons: {
     icon: "/favicon.ico",
@@ -56,10 +56,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${cormorant.variable} ${dmSans.variable} h-full`} suppressHydrationWarning>
+    <html lang="pt-BR" className={`${inter.variable} ${cormorant.variable} ${dmSans.variable} h-full`} suppressHydrationWarning>
       <body className="min-h-full overflow-hidden antialiased" suppressHydrationWarning>
         <a href="#main-content" className="skip-link">
-          Skip to main content
+          Pular para o conteúdo principal
         </a>
         <ThemeProvider>
           <I18nProvider>{children}</I18nProvider>

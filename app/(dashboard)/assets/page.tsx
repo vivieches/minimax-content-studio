@@ -77,28 +77,28 @@ const PAGE_SIZE = 12;
 
 const typeMeta: Record<AssetTypeFilter, { label: string; icon: typeof Archive; accent: string }> = {
   all: { label: "Todos", icon: Archive, accent: "var(--mm-accent)" },
-  script: { label: "Guion", icon: FileText, accent: "#7EA7FF" },
+  script: { label: "Roteiro", icon: FileText, accent: "#7EA7FF" },
   thumbnail: { label: "Miniatura", icon: ImageIcon, accent: "var(--mm-accent)" },
   music: { label: "Música", icon: Music2, accent: "#B78CFF" },
-  video: { label: "Video", icon: Video, accent: "#F87171" },
-  export: { label: "Exportación", icon: Package, accent: "#34D399" },
+  video: { label: "Vídeo", icon: Video, accent: "#F87171" },
+  export: { label: "Exportação", icon: Package, accent: "#34D399" },
   prompt: { label: "Prompt", icon: Sparkles, accent: "#FBBF24" },
 };
 
 const dateRangeLabels: Record<DateRange, string> = {
-  "7": "Últimos 7 días",
-  "30": "Últimos 30 días",
-  "90": "Últimos 90 días",
-  year: "Este año",
-  all: "Todo el tiempo",
+  "7": "Últimos 7 dias",
+  "30": "Últimos 30 dias",
+  "90": "Últimos 90 dias",
+  year: "Este ano",
+  all: "Todo o período",
 };
 
 const sortLabels: Record<SortKey, string> = {
-  recent: "Más recientes",
-  oldest: "Más antiguos",
-  name: "Nombre",
+  recent: "Mais recentes",
+  oldest: "Mais antigos",
+  name: "Nome",
   type: "Tipo",
-  size: "Tamaño",
+  size: "Tamanho",
 };
 
 function cx(...classes: Array<string | false | null | undefined>) {
@@ -107,15 +107,15 @@ function cx(...classes: Array<string | false | null | undefined>) {
 
 function formatRelativeDate(value: string) {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Editado recientemente";
+  if (Number.isNaN(date.getTime())) return "Editado recentemente";
   const diff = Date.now() - date.getTime();
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
-  if (minutes < 60) return "Editado hace menos de 1 hora";
-  if (hours < 24) return `Editado hace ${hours} ${hours === 1 ? "hora" : "horas"}`;
-  if (days === 1) return "Editado ayer";
-  return `Editado hace ${days} días`;
+  if (minutes < 60) return "Editado há menos de 1 hora";
+  if (hours < 24) return `Editado há ${hours} ${hours === 1 ? "hora" : "horas"}`;
+  if (days === 1) return "Editado ontem";
+  return `Editado há ${days} dias`;
 }
 
 function estimateSize(asset: AssetRecord) {
@@ -149,9 +149,9 @@ function getAssetTags(asset: AssetRecord) {
   const tags = asset.tags?.filter(Boolean) ?? [];
   if (tags.length) return tags.slice(0, 3);
   if (asset.type === "thumbnail") return ["Miniatura", "YouTube"];
-  if (asset.type === "script") return ["Guion", "Script"];
+  if (asset.type === "script") return ["Roteiro", "Script"];
   if (asset.type === "music") return ["Música"];
-  if (asset.type === "video" || asset.type === "export") return ["Video"];
+  if (asset.type === "video" || asset.type === "export") return ["Vídeo"];
   return ["Prompt"];
 }
 
@@ -367,7 +367,7 @@ function AssetMenu({
     <div className="relative">
       <button
         type="button"
-        aria-label={`Acciones para ${asset.title}`}
+        aria-label={`Ações para ${asset.title}`}
         onClick={(event) => {
           event.stopPropagation();
           setOpen((value) => !value);
@@ -384,10 +384,10 @@ function AssetMenu({
           <button className={itemClass} type="button" onClick={onOpen}>Abrir</button>
           <button className={itemClass} type="button" onClick={onRename}>Renombrar</button>
           <button className={itemClass} type="button" onClick={onDuplicate}>Duplicar</button>
-          <button className={itemClass} type="button" onClick={onDownload}>Descargar</button>
-          <button className={itemClass} type="button" onClick={() => alert("Mover a carpeta estará disponible cuando exista persistencia de carpetas.")}>Mover a carpeta</button>
-          <button className={itemClass} type="button" onClick={onPin}>{asset.favorite ? "Desfijar" : "Fijar"}</button>
-          <button className="block w-full rounded-[7px] px-3 py-2 text-left text-[12px] text-danger transition hover:bg-danger-soft" type="button" onClick={onDelete}>Eliminar</button>
+          <button className={itemClass} type="button" onClick={onDownload}>Baixar</button>
+          <button className={itemClass} type="button" onClick={() => alert("Mover para pasta ficará disponível quando a persistência de pastas existir.")}>Mover para pasta</button>
+          <button className={itemClass} type="button" onClick={onPin}>{asset.favorite ? "Desafixar" : "Fixar"}</button>
+          <button className="block w-full rounded-[7px] px-3 py-2 text-left text-[12px] text-danger transition hover:bg-danger-soft" type="button" onClick={onDelete}>Excluir</button>
         </div>
       ) : null}
     </div>
@@ -477,7 +477,7 @@ function Modal({
 }) {
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
-      <button type="button" aria-label="Cerrar" className="absolute inset-0 cursor-default" onClick={onClose} />
+      <button type="button" aria-label="Fechar" className="absolute inset-0 cursor-default" onClick={onClose} />
       <div className="relative w-full max-w-md rounded-[14px] border border-line bg-card shadow-2xl">
         <div className="flex items-center justify-between border-b border-line px-5 py-4">
           <h2 className="text-[16px] font-semibold text-ink">{title}</h2>
@@ -494,6 +494,7 @@ function Modal({
 export default function AssetsPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const workspaceFileInputRef = useRef<HTMLInputElement | null>(null);
+  const workspaceImportInputRef = useRef<HTMLInputElement | null>(null);
   const [assets, setAssets] = useState<AssetRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -519,6 +520,7 @@ export default function AssetsPage() {
   const [selectedFile, setSelectedFile] = useState<ProjectFileEntry | null>(null);
   const [editorContent, setEditorContent] = useState("");
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
+  const [workspaceImporting, setWorkspaceImporting] = useState(false);
   const [fileSaving, setFileSaving] = useState(false);
   const [workspaceError, setWorkspaceError] = useState("");
   const [liveArtifact, setLiveArtifact] = useState<LivePackageArtifact | null>(null);
@@ -534,7 +536,7 @@ export default function AssetsPage() {
       if (!data.ok) throw new Error(data.error || "Failed to load assets");
       setAssets(data.assets);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "No se pudieron cargar los archivos.");
+      setError(loadError instanceof Error ? loadError.message : "Não foi possível carregar os arquivos.");
     } finally {
       setLoading(false);
     }
@@ -546,7 +548,7 @@ export default function AssetsPage() {
     try {
       const projectsResponse = await fetch("/api/projects");
       const projectsData = (await projectsResponse.json()) as { ok?: boolean; projects?: ProjectRecord[]; error?: string };
-      if (!projectsResponse.ok || !projectsData.ok) throw new Error(projectsData.error || "No se pudo cargar proyectos.");
+      if (!projectsResponse.ok || !projectsData.ok) throw new Error(projectsData.error || "Não foi possível carregar os projetos.");
       const nextProjects = projectsData.projects ?? [];
       setProjects(nextProjects);
 
@@ -566,12 +568,12 @@ export default function AssetsPage() {
       ]);
       const filesData = (await filesResponse.json()) as { ok?: boolean; files?: ProjectFileEntry[]; error?: string };
       const artifactData = (await artifactResponse.json()) as { ok?: boolean; artifact?: LivePackageArtifact | null };
-      if (!filesResponse.ok || !filesData.ok) throw new Error(filesData.error || "No se pudo cargar archivos del proyecto.");
+      if (!filesResponse.ok || !filesData.ok) throw new Error(filesData.error || "Não foi possível carregar os arquivos do projeto.");
 
       setProjectFiles(filesData.files ?? []);
       setLiveArtifact(artifactData.artifact ?? null);
     } catch (workspaceLoadError) {
-      setWorkspaceError(workspaceLoadError instanceof Error ? workspaceLoadError.message : "No se pudo cargar el workspace.");
+      setWorkspaceError(workspaceLoadError instanceof Error ? workspaceLoadError.message : "Não foi possível carregar o workspace.");
     } finally {
       setWorkspaceLoading(false);
     }
@@ -694,20 +696,20 @@ export default function AssetsPage() {
   async function handlePin(asset: AssetRecord) {
     try {
       await updateAsset(asset.id, { favorite: !asset.favorite });
-      showMessage(asset.favorite ? "Archivo desfijado" : "Archivo fijado");
+      showMessage(asset.favorite ? "Arquivo desafixado" : "Arquivo fixado");
     } catch {
-      showMessage("No se pudo actualizar el archivo");
+      showMessage("Não foi possível atualizar o arquivo");
     }
   }
 
   async function handleRename(asset: AssetRecord) {
-    const next = window.prompt("Nuevo nombre", asset.title);
+    const next = window.prompt("Novo nome", asset.title);
     if (!next?.trim()) return;
     try {
       await updateAsset(asset.id, { title: next.trim() });
-      showMessage("Archivo renombrado");
+      showMessage("Arquivo renomeado");
     } catch {
-      showMessage("No se pudo renombrar");
+      showMessage("Não foi possível renomear");
     }
   }
 
@@ -732,23 +734,23 @@ export default function AssetsPage() {
       const data = await response.json();
       if (!data.ok) throw new Error(data.error);
       setAssets((current) => [data.asset, ...current]);
-      showMessage("Archivo duplicado");
+      showMessage("Arquivo duplicado");
     } catch {
-      showMessage("No se pudo duplicar");
+      showMessage("Não foi possível duplicar");
     }
   }
 
   async function handleDelete(asset: AssetRecord) {
-    if (!window.confirm("¿Eliminar este archivo?")) return;
+    if (!window.confirm("Excluir este arquivo?")) return;
     try {
       const response = await fetch(`/api/assets/${asset.id}`, { method: "DELETE" });
       const data = await response.json();
       if (!data.ok) throw new Error(data.error);
       setAssets((current) => current.filter((item) => item.id !== asset.id));
       if (selectedAsset?.id === asset.id) setSelectedAsset(null);
-      showMessage("Archivo eliminado");
+      showMessage("Arquivo excluído");
     } catch {
-      showMessage("No se pudo eliminar");
+      showMessage("Não foi possível excluir");
     }
   }
 
@@ -768,18 +770,18 @@ export default function AssetsPage() {
       URL.revokeObjectURL(url);
       return;
     }
-    showMessage("Este archivo no tiene descarga directa todavía");
+    showMessage("Este arquivo ainda não tem download direto");
   }
 
   function createFolder() {
     if (!folderName.trim()) {
-      setFolderError("Escribe un nombre de carpeta.");
+      setFolderError("Digite um nome para a pasta.");
       return;
     }
     setFolderModalOpen(false);
     setFolderName("");
     setFolderError("");
-    showMessage("Carpeta preparada. La persistencia de carpetas aún no está conectada.");
+    showMessage("Pasta preparada. A persistência de pastas ainda não está conectada.");
   }
 
   async function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -800,7 +802,7 @@ export default function AssetsPage() {
         const image = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(String(reader.result));
-          reader.onerror = () => reject(new Error("No se pudo leer la imagen."));
+          reader.onerror = () => reject(new Error("Não foi possível ler a imagem."));
           reader.readAsDataURL(file);
         });
         const uploadResponse = await fetch("/api/upload-image", {
@@ -810,7 +812,7 @@ export default function AssetsPage() {
         });
         const uploadData = await uploadResponse.json();
         if (!uploadResponse.ok || !uploadData.url) {
-          throw new Error(uploadData.error || "No se pudo guardar la imagen.");
+          throw new Error(uploadData.error || "Não foi possível salvar a imagem.");
         }
         uploadedUrl = uploadData.url;
       }
@@ -824,8 +826,8 @@ export default function AssetsPage() {
           type: assetType,
           title: file.name,
           description: isText
-            ? content?.slice(0, 500) || "Archivo de texto subido"
-            : "Imagen subida y guardada localmente.",
+            ? content?.slice(0, 500) || "Arquivo de texto enviado"
+            : "Imagem enviada e salva localmente.",
           content,
           filePath: uploadedUrl || undefined,
           thumbnailPath: uploadedUrl || undefined,
@@ -843,9 +845,9 @@ export default function AssetsPage() {
       if (!data.ok) throw new Error(data.error || "Upload failed");
       setAssets((current) => [data.asset, ...current]);
       setUploadModalOpen(false);
-      showMessage(isText ? "Archivo subido" : "Imagen subida");
+      showMessage(isText ? "Arquivo enviado" : "Imagem enviada");
     } catch (uploadError) {
-      setUploadError(uploadError instanceof Error ? uploadError.message : "No se pudo subir el archivo.");
+      setUploadError(uploadError instanceof Error ? uploadError.message : "Não foi possível enviar o arquivo.");
     } finally {
       setUploading(false);
       event.target.value = "";
@@ -887,6 +889,7 @@ export default function AssetsPage() {
     if (!selectedProjectId || !selectedFile || !isEditableProjectFile(selectedFile)) return;
     setFileSaving(true);
     try {
+      await ensureLocalSession();
       const response = await fetch(projectFileUrl(selectedProjectId, selectedFile.path), {
         method: "PUT",
         headers: { "Content-Type": selectedFile.mime || "text/plain; charset=utf-8" },
@@ -913,6 +916,7 @@ export default function AssetsPage() {
     if (!content.trim()) return;
     const path = `files/manual/paste-${Date.now()}.md`;
     try {
+      await ensureLocalSession();
       const response = await fetch(projectFileUrl(selectedProjectId, path), {
         method: "PUT",
         headers: { "Content-Type": "text/markdown; charset=utf-8" },
@@ -933,6 +937,7 @@ export default function AssetsPage() {
     if (!file || !selectedProjectId) return;
     const path = `files/uploads/${Date.now()}-${safeUploadName(file.name)}`;
     try {
+      await ensureLocalSession();
       const response = await fetch(projectFileUrl(selectedProjectId, path), {
         method: "PUT",
         headers: { "Content-Type": file.type || "application/octet-stream" },
@@ -950,6 +955,88 @@ export default function AssetsPage() {
     }
   }
 
+  async function exportWorkspaceProject() {
+    if (!selectedProjectId) {
+      showMessage("Selecione um projeto para exportar");
+      return;
+    }
+    try {
+      const response = await fetch("/api/exports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: selectedProjectId }),
+      });
+      const data = (await response.json()) as { ok?: boolean; export?: { id: string }; error?: string };
+      if (!response.ok || !data.ok || !data.export?.id) throw new Error(data.error || "Export failed");
+      window.open(`/api/exports/${data.export.id}/download`, "_blank");
+      showMessage("Export profissional criado");
+    } catch {
+      showMessage("Não foi possível exportar o projeto");
+    }
+  }
+
+  async function ensureLocalSession() {
+    const response = await fetch("/api/security/local-session", { cache: "no-store" });
+    const data = (await response.json()) as { ok?: boolean; error?: string };
+    if (!response.ok || !data.ok) throw new Error(data.error || "Sessão local indisponível");
+  }
+
+  async function handleWorkspaceImport(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setWorkspaceImporting(true);
+    setWorkspaceError("");
+    try {
+      await ensureLocalSession();
+      const archiveBase64 = await fileToBase64(file);
+      const response = await fetch("/api/projects/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceName: file.name,
+          archiveBase64,
+        }),
+      });
+      const data = (await response.json()) as { ok?: boolean; project?: ProjectRecord; error?: string };
+      if (!response.ok || !data.ok || !data.project) throw new Error(data.error || "Import failed");
+      await loadWorkspace(true, data.project.id);
+      showMessage("Projeto importado");
+    } catch (importError) {
+      setWorkspaceError(importError instanceof Error ? importError.message : "Não foi possível importar o projeto.");
+    } finally {
+      setWorkspaceImporting(false);
+      event.target.value = "";
+    }
+  }
+
+  async function revealWorkspaceProject() {
+    try {
+      await ensureLocalSession();
+      const body = JSON.stringify(selectedProjectId ? { target: "project", projectId: selectedProjectId } : { target: "projects" });
+      const response = await fetch("/api/desktop/reveal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
+      const data = (await response.json()) as { ok?: boolean; error?: string };
+      if (!response.ok || !data.ok) throw new Error(data.error || "Reveal failed");
+      showMessage("Pasta local aberta");
+    } catch (revealError) {
+      setWorkspaceError(revealError instanceof Error ? revealError.message : "Não foi possível abrir a pasta local.");
+    }
+  }
+
+  async function fileToBase64(file: File) {
+    const buffer = await file.arrayBuffer();
+    let binary = "";
+    const bytes = new Uint8Array(buffer);
+    const chunkSize = 0x8000;
+    for (let index = 0; index < bytes.length; index += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+    }
+    return window.btoa(binary);
+  }
+
   const typeOrder: AssetTypeFilter[] = ["all", "script", "thumbnail", "export", "prompt"];
 
   return (
@@ -958,12 +1045,12 @@ export default function AssetsPage() {
         <div className="mb-7 flex items-center justify-between">
           <h2 className="text-[15px] font-semibold text-ink">Filtros</h2>
           <button type="button" onClick={clearFilters} className="text-[12px] font-semibold text-accent transition hover:text-accent-hi">
-            Limpiar
+            Limpar
           </button>
         </div>
 
         <section>
-          <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-3">TIPO DE CONTENIDO</h3>
+          <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-3">Tipo de conteúdo</h3>
           <div className="space-y-1">
             {typeOrder.map((type) => {
               const meta = typeMeta[type];
@@ -989,7 +1076,7 @@ export default function AssetsPage() {
         </section>
 
         <section className="mt-7 border-t border-line pt-6">
-          <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-3">RANGO DE FECHAS</h3>
+          <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-3">Período</h3>
           <div className="relative">
             <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-2" strokeWidth={1.7} />
             <select
@@ -1037,7 +1124,7 @@ export default function AssetsPage() {
             ))}
           </div>
           <button type="button" className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-medium text-ink-2 transition hover:text-accent">
-            Ver todas las etiquetas <ChevronRight className="h-3.5 w-3.5" />
+            Ver todas as etiquetas <ChevronRight className="h-3.5 w-3.5" />
           </button>
         </section>
       </aside>
@@ -1050,11 +1137,11 @@ export default function AssetsPage() {
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Buscar archivos..."
+                placeholder="Buscar arquivos..."
                 className="h-11 w-full rounded-[9px] border border-line bg-card px-11 pr-16 text-[14px] text-ink placeholder:text-ink-2 transition hover:border-line-hi focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/15"
               />
               <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-[6px] border border-line bg-card-hi px-1.5 py-0.5 text-[11px] text-ink-2">
-                ⌘ K
+                Filtro
               </kbd>
             </label>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -1064,7 +1151,7 @@ export default function AssetsPage() {
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-[9px] border border-line bg-white/[0.025] px-4 text-[13px] font-semibold text-ink-2 transition hover:border-line-hi hover:bg-hover hover:text-ink"
               >
                 <FolderPlus className="h-4 w-4" />
-                Nueva carpeta
+                Nova pasta
               </button>
               <button
                 type="button"
@@ -1072,22 +1159,22 @@ export default function AssetsPage() {
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-[9px] bg-accent px-4 text-[13px] font-semibold text-accent-fg shadow-[0_12px_34px_rgba(208,111,167,0.18)] transition hover:bg-accent-hi"
               >
                 <Upload className="h-4 w-4" />
-                Subir archivo
+                Enviar arquivo
               </button>
             </div>
           </div>
 
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <h1 className="text-[28px] font-bold tracking-[-0.035em] text-ink">Archivos</h1>
-              <p className="mt-2 text-[14px] text-ink-2">Todo tu contenido generado en un solo lugar.</p>
+              <h1 className="text-[28px] font-bold tracking-[-0.035em] text-ink">Arquivos</h1>
+              <p className="mt-2 text-[14px] text-ink-2">Todo conteúdo gerado fica organizado em um só lugar.</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex rounded-[9px] border border-line bg-card p-1">
-                <IconButton active={viewMode === "grid"} label="Vista grid" onClick={() => setViewMode("grid")}>
+                <IconButton active={viewMode === "grid"} label="Visualização em grade" onClick={() => setViewMode("grid")}>
                   <Grid2X2 className="h-4 w-4" />
                 </IconButton>
-                <IconButton active={viewMode === "list"} label="Vista lista" onClick={() => setViewMode("list")}>
+                <IconButton active={viewMode === "list"} label="Visualização em lista" onClick={() => setViewMode("list")}>
                   <LayoutList className="h-4 w-4" />
                 </IconButton>
               </div>
@@ -1145,8 +1232,18 @@ export default function AssetsPage() {
                 <button type="button" onClick={createWorkspaceProject} className="h-10 rounded-[8px] border border-line px-3 text-[12px] font-semibold text-ink-2 hover:bg-hover">
                   Novo projeto
                 </button>
+                <button type="button" onClick={() => workspaceImportInputRef.current?.click()} disabled={workspaceImporting} className="h-10 rounded-[8px] border border-line px-3 text-[12px] font-semibold text-ink-2 hover:bg-hover disabled:opacity-50">
+                  {workspaceImporting ? "Importando..." : "Importar ZIP"}
+                </button>
+                <input ref={workspaceImportInputRef} type="file" className="hidden" accept=".zip,application/zip" onChange={handleWorkspaceImport} />
                 <button type="button" onClick={() => void loadWorkspace(true, selectedProjectId)} className="h-10 rounded-[8px] border border-line px-3 text-[12px] font-semibold text-ink-2 hover:bg-hover">
                   Atualizar
+                </button>
+                <button type="button" onClick={revealWorkspaceProject} className="h-10 rounded-[8px] border border-line px-3 text-[12px] font-semibold text-ink-2 hover:bg-hover">
+                  Abrir pasta
+                </button>
+                <button type="button" onClick={exportWorkspaceProject} className="h-10 rounded-[8px] bg-accent px-3 text-[12px] font-semibold text-accent-fg hover:bg-accent-hi">
+                  Exportar
                 </button>
               </div>
             </div>
@@ -1190,7 +1287,7 @@ export default function AssetsPage() {
                     Colar
                   </button>
                   <button type="button" onClick={() => workspaceFileInputRef.current?.click()} className="h-9 rounded-[8px] border border-line text-[12px] font-semibold text-ink-2 hover:bg-hover">
-                    Upload
+                    Enviar
                   </button>
                   <input ref={workspaceFileInputRef} type="file" className="hidden" accept="image/*,.txt,.md,.json,.csv" onChange={handleWorkspaceFileUpload} />
                 </div>
@@ -1247,7 +1344,7 @@ export default function AssetsPage() {
               <div className="rounded-[11px] border border-line bg-card-hi p-4">
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-3">Live artifact</p>
+                    <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-3">Pacote vivo</p>
                     <h3 className="mt-2 text-[15px] font-semibold text-ink">{liveArtifact?.selectedTitle || "Sem pacote ativo"}</h3>
                   </div>
                   {liveArtifact?.critiqueScore ? (
@@ -1294,7 +1391,7 @@ export default function AssetsPage() {
             >
               <div className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.05em] text-accent">
                 <Sparkles className="h-4 w-4" />
-                DESTACADO
+                Destaque
               </div>
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
@@ -1317,7 +1414,7 @@ export default function AssetsPage() {
                 </div>
                 <div className="flex items-center gap-3 text-[12px] font-semibold text-accent">
                   <Pin className="h-4 w-4" fill="currentColor" />
-                  Fijado
+                  Fixado
                   <MoreHorizontal className="h-4 w-4 text-ink-3" />
                 </div>
               </div>
@@ -1325,7 +1422,7 @@ export default function AssetsPage() {
           ) : null}
 
           <div className="flex items-center justify-between">
-            <h2 className="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-3">ARCHIVOS RECIENTES</h2>
+            <h2 className="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-3">ARQUIVOS RECENTES</h2>
             <button type="button" onClick={clearFilters} className="text-[12px] font-semibold text-ink-3 transition hover:text-accent lg:hidden">
               Filtros: {typeMeta[selectedType].label}
             </button>
@@ -1339,11 +1436,11 @@ export default function AssetsPage() {
             <div className="grid min-h-[360px] place-items-center rounded-[13px] border border-line bg-card p-8 text-center">
               <div>
                 <Archive className="mx-auto h-10 w-10 text-accent" />
-                <h3 className="mt-4 text-[16px] font-semibold text-ink">Todavía no tienes archivos</h3>
-                <p className="mt-2 max-w-[42ch] text-[13px] leading-5 text-ink-2">Genera contenido o sube un archivo para empezar a organizar tu estudio.</p>
+                <h3 className="mt-4 text-[16px] font-semibold text-ink">Você ainda não tem arquivos</h3>
+                <p className="mt-2 max-w-[42ch] text-[13px] leading-5 text-ink-2">Gere conteúdo ou envie um arquivo para começar a organizar o estúdio.</p>
                 <div className="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
-                  <button type="button" onClick={() => setUploadModalOpen(true)} className="h-10 rounded-[9px] bg-accent px-4 text-[13px] font-semibold text-accent-fg">Subir archivo</button>
-                  <button type="button" onClick={() => setFolderModalOpen(true)} className="h-10 rounded-[9px] border border-line px-4 text-[13px] font-semibold text-ink-2">Crear nuevo contenido</button>
+                  <button type="button" onClick={() => setUploadModalOpen(true)} className="h-10 rounded-[9px] bg-accent px-4 text-[13px] font-semibold text-accent-fg">Enviar arquivo</button>
+                  <button type="button" onClick={() => setFolderModalOpen(true)} className="h-10 rounded-[9px] border border-line px-4 text-[13px] font-semibold text-ink-2">Criar conteúdo</button>
                 </div>
               </div>
             </div>
@@ -1351,9 +1448,9 @@ export default function AssetsPage() {
             <div className="grid min-h-[320px] place-items-center rounded-[13px] border border-line bg-card p-8 text-center">
               <div>
                 <Search className="mx-auto h-10 w-10 text-ink-3" />
-                <h3 className="mt-4 text-[16px] font-semibold text-ink">No encontramos archivos con estos filtros</h3>
+                <h3 className="mt-4 text-[16px] font-semibold text-ink">Nenhum arquivo encontrado com estes filtros</h3>
                 <button type="button" onClick={clearFilters} className="mt-5 h-10 rounded-[9px] border border-accent/35 bg-accent-soft px-4 text-[13px] font-semibold text-accent">
-                  Limpiar filtros
+                  Limpar filtros
                 </button>
               </div>
             </div>
@@ -1375,7 +1472,7 @@ export default function AssetsPage() {
           ) : (
             <div className="overflow-hidden rounded-[13px] border border-line bg-card">
               <div className="grid grid-cols-[minmax(220px,1fr)_110px_160px_150px_90px_48px] border-b border-line px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.05em] text-ink-3">
-                <span>Nome</span><span>Tipo</span><span>Etiquetas</span><span>Modificado</span><span>Tamaño</span><span>Ações</span>
+                <span>Nome</span><span>Tipo</span><span>Etiquetas</span><span>Modificado</span><span>Tamanho</span><span>Ações</span>
               </div>
               {visibleAssets.map((asset) => (
                 <button
@@ -1420,47 +1517,47 @@ export default function AssetsPage() {
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
-            <p className="text-[13px] text-ink-3">Mostrando {from}–{to} de {filteredAssets.length}</p>
+            <p className="text-[13px] text-ink-3">Exibindo {from}–{to} de {filteredAssets.length}</p>
           </footer>
         </div>
       </section>
 
       {folderModalOpen ? (
-        <Modal title="Nueva carpeta" onClose={() => setFolderModalOpen(false)}>
+        <Modal title="Nova pasta" onClose={() => setFolderModalOpen(false)}>
           <div className="space-y-4 p-5">
             <label className="block">
-              <span className="mb-2 block text-[12px] font-semibold text-ink-2">Nombre de la carpeta</span>
+              <span className="mb-2 block text-[12px] font-semibold text-ink-2">Nome da pasta</span>
               <input value={folderName} onChange={(event) => setFolderName(event.target.value)} className="h-10 w-full rounded-[8px] border border-line bg-card-hi px-3 text-[13px] text-ink focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/15" />
             </label>
-            {folderError ? <p className="text-[12px] text-danger">{folderError}</p> : <p className="text-[12px] leading-5 text-ink-3">La UI está lista. La persistencia de carpetas todavía no existe en el backend actual.</p>}
+            {folderError ? <p className="text-[12px] text-danger">{folderError}</p> : <p className="text-[12px] leading-5 text-ink-3">A interface está pronta. A persistência de pastas ainda não existe no backend atual.</p>}
             <div className="flex justify-end gap-2">
               <button type="button" onClick={() => setFolderModalOpen(false)} className="h-10 rounded-[8px] border border-line px-4 text-[13px] font-semibold text-ink-2">Cancelar</button>
-              <button type="button" onClick={createFolder} className="h-10 rounded-[8px] bg-accent px-4 text-[13px] font-semibold text-accent-fg">Crear carpeta</button>
+              <button type="button" onClick={createFolder} className="h-10 rounded-[8px] bg-accent px-4 text-[13px] font-semibold text-accent-fg">Criar pasta</button>
             </div>
           </div>
         </Modal>
       ) : null}
 
       {uploadModalOpen ? (
-        <Modal title="Subir archivo" onClose={() => setUploadModalOpen(false)}>
+        <Modal title="Enviar arquivo" onClose={() => setUploadModalOpen(false)}>
           <div className="space-y-4 p-5">
             <div className="rounded-[12px] border border-dashed border-line bg-card-hi/50 p-6 text-center">
               <Upload className="mx-auto h-8 w-8 text-accent" />
-              <p className="mt-3 text-[13px] font-semibold text-ink">Selecciona imagen o documento de texto</p>
-              <p className="mt-2 text-[12px] leading-5 text-ink-3">Texto e imágenes se guardan como assets locales. Audio y video salen del alcance activo.</p>
+              <p className="mt-3 text-[13px] font-semibold text-ink">Selecione uma imagem ou documento de texto</p>
+              <p className="mt-2 text-[12px] leading-5 text-ink-3">Texto e imagens são salvos como assets locais. Áudio e vídeo ficam fora da superfície ativa.</p>
               <button type="button" onClick={() => fileInputRef.current?.click()} className="mt-4 h-10 rounded-[8px] bg-accent px-4 text-[13px] font-semibold text-accent-fg">
-                Elegir archivo
+                Escolher arquivo
               </button>
               <input ref={fileInputRef} type="file" className="hidden" accept="image/*,.txt,.md,.json,.csv" onChange={handleFileUpload} />
             </div>
-            {uploading ? <p className="flex items-center gap-2 text-[12px] text-ink-2"><Loader2 className="h-4 w-4 animate-spin" /> Subiendo...</p> : null}
+            {uploading ? <p className="flex items-center gap-2 text-[12px] text-ink-2"><Loader2 className="h-4 w-4 animate-spin" /> Enviando...</p> : null}
             {uploadError ? <p className="text-[12px] text-danger">{uploadError}</p> : null}
           </div>
         </Modal>
       ) : null}
 
       {selectedAsset ? (
-        <Modal title="Abrir archivo" onClose={() => setSelectedAsset(null)}>
+        <Modal title="Abrir arquivo" onClose={() => setSelectedAsset(null)}>
           <div className="space-y-4 p-5">
             <div className="aspect-video overflow-hidden rounded-[10px] border border-line bg-card-hi">
               <Preview asset={selectedAsset} />
@@ -1471,10 +1568,10 @@ export default function AssetsPage() {
               <p className="mt-3 max-h-32 overflow-y-auto text-[12px] leading-5 text-ink-3">{selectedAsset.description}</p>
             </div>
             <div className="flex flex-wrap justify-end gap-2">
-              <button type="button" onClick={() => handlePin(selectedAsset)} className="h-10 rounded-[8px] border border-line px-4 text-[13px] font-semibold text-ink-2">{selectedAsset.favorite ? "Desfijar" : "Fijar"}</button>
+              <button type="button" onClick={() => handlePin(selectedAsset)} className="h-10 rounded-[8px] border border-line px-4 text-[13px] font-semibold text-ink-2">{selectedAsset.favorite ? "Desafixar" : "Fixar"}</button>
               <button type="button" onClick={() => handleDuplicate(selectedAsset)} className="inline-flex h-10 items-center gap-2 rounded-[8px] border border-line px-4 text-[13px] font-semibold text-ink-2"><Copy className="h-4 w-4" />Duplicar</button>
-              <button type="button" onClick={() => handleDownload(selectedAsset)} className="inline-flex h-10 items-center gap-2 rounded-[8px] bg-accent px-4 text-[13px] font-semibold text-accent-fg"><Download className="h-4 w-4" />Descargar</button>
-              <button type="button" onClick={() => handleDelete(selectedAsset)} className="inline-flex h-10 items-center gap-2 rounded-[8px] border border-danger/30 px-4 text-[13px] font-semibold text-danger"><Trash2 className="h-4 w-4" />Eliminar</button>
+              <button type="button" onClick={() => handleDownload(selectedAsset)} className="inline-flex h-10 items-center gap-2 rounded-[8px] bg-accent px-4 text-[13px] font-semibold text-accent-fg"><Download className="h-4 w-4" />Baixar</button>
+              <button type="button" onClick={() => handleDelete(selectedAsset)} className="inline-flex h-10 items-center gap-2 rounded-[8px] border border-danger/30 px-4 text-[13px] font-semibold text-danger"><Trash2 className="h-4 w-4" />Excluir</button>
             </div>
           </div>
         </Modal>

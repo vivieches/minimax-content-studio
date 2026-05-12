@@ -6,6 +6,7 @@ import { daemonHealthPayload, daemonLogsPayload, daemonStatusPayload } from "./r
 import { handleCritiqueRoutes } from "./routes/critique";
 import { handleProjectRoutes } from "./routes/projects";
 import { handleRunRoutes } from "./routes/runs";
+import { redactSecrets, redactString } from "./security/redaction";
 
 export type StartDaemonServerOptions = DaemonContextOptions & {
   host?: string;
@@ -35,8 +36,8 @@ async function appendDaemonLog(context: DaemonContext, level: "info" | "warn" | 
   const line = JSON.stringify({
     at: new Date().toISOString(),
     level,
-    message,
-    data,
+    message: redactString(message),
+    data: redactSecrets(data),
   });
   await appendFile(context.logFile, `${line}\n`, "utf8").catch(() => undefined);
 }

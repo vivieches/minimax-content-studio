@@ -12,7 +12,7 @@ const locales: { value: Locale; label: string; flag: string }[] = [
 ];
 
 export function LanguageSwitcher() {
-  const { locale, setLocale, t } = useT();
+  const { locale, setLocale } = useT();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -70,7 +70,7 @@ export function LanguageSwitcher() {
       <button
         ref={btnRef}
         onClick={handleOpen}
-        title={`${t("nav.language")}: ${current.label}`}
+        title={`Idioma: ${current.label}`}
         className="flex h-8 w-8 items-center justify-center rounded-lg text-[#8D91A0] transition-colors duration-100 hover:bg-white/[0.045] hover:text-[#F5F2F4]"
       >
         <Globe className="h-[18px] w-[18px]" strokeWidth={1.5} />

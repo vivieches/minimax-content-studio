@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+import { createDaemonContext } from "@/daemon/context";
+import { createProfessionalPackageExport } from "@/daemon/export/package";
 import { getExports, createExport } from "@/lib/storage/exports";
+import { DATA_DIR } from "@/lib/storage/db";
 import { exportSchema, validateOr400 } from "@/lib/validation/schemas";
 import { withRateLimitHeaders, validatePayloadSize, PAYLOAD_LIMITS } from "@/lib/security/rateLimit";
 
@@ -29,6 +32,12 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
+    if (typeof body.projectId === "string") {
+      const context = createDaemonContext({ storageDir: DATA_DIR });
+      const result = await createProfessionalPackageExport({ projectId: body.projectId, context });
+      return withRateLimitHeaders(NextResponse.json({ ok: true, export: result.exportRecord, files: result.files }));
+    }
+
     const validation = validateOr400(exportSchema, body);
     if (!validation.success) {
       return NextResponse.json({ ok: false, error: validation.error }, { status: 400 });

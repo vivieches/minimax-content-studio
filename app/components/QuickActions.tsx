@@ -1,17 +1,12 @@
 import Link from "next/link";
-import { ArrowRight, Box, FileText, Image as ImageIcon } from "lucide-react";
-
-const quickActions = [
-  { href: "/scripts", icon: FileText, label: "Nuevo guion" },
-  { href: "/thumbnails", icon: ImageIcon, label: "Nueva miniatura" },
-  { href: "/pipeline", icon: Box, label: "Nuevo pipeline" },
-];
+import { ArrowRight } from "lucide-react";
+import { quickActions } from "@/lib/ui/copy";
 
 export function QuickActions() {
   return (
     <section aria-labelledby="quick-actions-title">
       <h2 id="quick-actions-title" className="mb-[14px] text-[16px] font-semibold text-[#F5F2F4]">
-        Acciones rápidas
+        Ações rápidas
       </h2>
 
       <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 xl:grid-cols-4">
@@ -29,6 +24,9 @@ export function QuickActions() {
                 <Icon className="mb-[22px] h-[38px] w-[38px] text-accent" strokeWidth={1.35} />
                 <span className="truncate text-[16px] font-semibold leading-none text-[#F5F2F4]">
                   {action.label}
+                </span>
+                <span className="mt-2 line-clamp-2 text-[12px] leading-4 text-[#8D91A0]">
+                  {action.description}
                 </span>
               </span>
               <ArrowRight className="relative mt-[52px] h-[20px] w-[20px] flex-shrink-0 text-[#B6BAC5] transition-transform duration-200 ease-out group-hover:translate-x-1 group-hover:text-accent" strokeWidth={1.45} />

@@ -1160,16 +1160,16 @@ const I18nContext = createContext<{
   setLocale: (l: Locale) => void;
   t: (key: string) => string;
 }>({
-  locale: "en",
+  locale: "pt-BR",
   setLocale: () => {},
-  t: (key) => en[key] ?? key,
+  t: (key) => ptBR[key] ?? en[key] ?? key,
 });
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(() => {
-    if (typeof window === "undefined") return "en";
+    if (typeof window === "undefined") return "pt-BR";
     const saved = localStorage.getItem("mm-locale") as Locale;
-    return saved && Object.keys(translations).includes(saved) ? saved : "en";
+    return saved && Object.keys(translations).includes(saved) ? saved : "pt-BR";
   });
   const [ready, setReady] = useState(false);
 
@@ -1184,7 +1184,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = useCallback((key: string): string => {
-    return translations[locale][key] ?? translations.en[key] ?? key;
+    return translations[locale][key] ?? translations["pt-BR"][key] ?? translations.en[key] ?? key;
   }, [locale]);
 
   const value = useMemo(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
