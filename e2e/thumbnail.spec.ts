@@ -12,9 +12,9 @@ test.describe("Thumbnail Generator", () => {
     });
 
     await page.goto("/thumbnails");
-    await expect(page.getByRole("heading", { name: "Generador de Miniaturas" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Gerador de Miniaturas" })).toBeVisible();
 
-    await page.getByPlaceholder("MiniMax M2.7 construyó mi fábrica de contenido").fill("AI Tools for Developers");
+    await page.getByPlaceholder("MiniMax M2.7 construiu minha fábrica de conteúdo").fill("AI Tools for Developers");
     await page.getByPlaceholder("5 AI Tools in 2024").fill("Best AI Tools 2024");
     await page.locator('input[maxlength="40"]').fill("MUST HAVE");
 
@@ -28,14 +28,14 @@ test.describe("Thumbnail Generator", () => {
   test("generate action reports provider errors instead of fake success", async ({ page }) => {
     await page.request.put("/api/settings", { data: { demoMode: true } });
     await page.goto("/thumbnails");
-    await expect(page.getByRole("heading", { name: "Generador de Miniaturas" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Gerador de Miniaturas" })).toBeVisible();
 
-    await page.getByPlaceholder("MiniMax M2.7 construyó mi fábrica de contenido").fill("AI Tools for Developers");
+    await page.getByPlaceholder("MiniMax M2.7 construiu minha fábrica de conteúdo").fill("AI Tools for Developers");
     await page.getByPlaceholder("5 AI Tools in 2024").fill("Best AI Tools 2024");
     await page.locator('input[maxlength="40"]').fill("MUST HAVE");
-    await page.getByRole("button", { name: "Generar miniatura" }).click();
+    await page.getByRole("button", { name: "Gerar miniatura" }).click();
 
-    await expect(page.getByText(/Miniatura generada|Configura un provider|No se pudo generar/i)).toBeVisible({
+    await expect(page.getByText(/Miniatura gerada|Configure um provedor|Não foi possível gerar/i)).toBeVisible({
       timeout: 15000,
     });
     await page.request.put("/api/settings", { data: { demoMode: false } });

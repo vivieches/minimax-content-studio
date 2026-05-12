@@ -4,9 +4,9 @@ Data: 2026-05-11
 
 ## Implementation Status
 
-- Done: Sprint 0 storage/test isolation, Sprint 1 daemon foundation, Sprint 2 project store, Sprint 3 run lifecycle, Sprint 4 agent runtime loop, Sprint 5 fallback chain and diagnostics, Sprint 6 provider/model discovery, Sprint 7 full media tool, Sprint 8 research and CTR/SEO titles, Sprint 9 captions, Sprint 10 prompt composer, skills, memory and brand kit, Sprint 11 package critique, Sprint 12 file workspace and live artifacts, Sprint 13 professional export, Sprint 14 import, desktop bridge and security, Sprint 15 UX polish, i18n baseline and quick switcher.
-- Current verification: `rtk npm run lint`, `rtk npm test` (`141/141`) and `rtk npm run build` passed after Sprint 15. Build still reports one known Turbopack/NFT warning through `/api/desktop/reveal`, because local storage routes import `DATA_DIR`.
-- Next: Sprint 16 full flow verification.
+- Done: Sprint 0 storage/test isolation, Sprint 1 daemon foundation, Sprint 2 project store, Sprint 3 run lifecycle, Sprint 4 agent runtime loop, Sprint 5 fallback chain and diagnostics, Sprint 6 provider/model discovery, Sprint 7 full media tool, Sprint 8 research and CTR/SEO titles, Sprint 9 captions, Sprint 10 prompt composer, skills, memory and brand kit, Sprint 11 package critique, Sprint 12 file workspace and live artifacts, Sprint 13 professional export, Sprint 14 import, desktop bridge and security, Sprint 15 UX polish, i18n baseline and quick switcher, Sprint 16 full flow verification.
+- Current verification on 2026-05-12: `rtk npm run lint`, `rtk npm test` (`141/141`), `rtk npm run build` and `rtk npm run test:e2e` (`14/14`) passed. Build still reports known Turbopack/NFT warnings through `/api/desktop/reveal`, because local storage routes import `DATA_DIR`.
+- Next: choose the next product sprint after reviewing real-provider smoke results and Lucas's priority.
 
 ## Sprint 0 - Stabilize Current Main
 
@@ -321,17 +321,21 @@ Acceptance:
 
 Goal: prove the app works end to end.
 
+Status: Done on 2026-05-12.
+
 Smoke matrix:
 
-- Demo/stub only.
-- CLI text + stub image.
-- BYOK text + BYOK image.
-- CLI text + media tool image.
-- Failed CLI + BYOK fallback.
-- Missing caption pattern.
-- Caption pattern present.
-- Research off.
-- Research on with Tavily.
+- Passed automated: demo/stub package flow with text, image, export id, title pack and captions.
+- Passed automated: media tool image task using stub provider, including waitable task status.
+- Passed automated: agent registry loads without hidden prompt execution.
+- Passed automated: generated title packs persist and load on `/content`.
+- Passed automated: pipeline exposes title, thumbnail and caption modules.
+- Passed automated: research-off title/package flow.
+- Passed automated: research route returns sources when Tavily is configured or a clear `research_unconfigured` diagnostic when it is not.
+- Passed automated: caption generation with default SEO pattern and with Lucas-style pattern.
+- Covered by unit/integration tests: provider payloads, fallback/error classification, SSRF/base URL validation, settings/assets/package APIs and CLI detection.
+- Gated manual smoke: real BYOK text + real BYOK image still depends on local keys and quota.
+- Gated manual smoke: real CLI prompt execution is intentionally manual because it can spend account quota and hit local Codex/Claude/Gemini auth state.
 
 Required commands:
 
@@ -350,3 +354,9 @@ Manual routes:
 - `/thumbnails`
 - `/pipeline`
 - `/assets`
+
+Notes:
+
+- The E2E suite now starts in an isolated `.open-studio-test/playwright` data directory and uses deterministic stub/demo paths for the required smoke.
+- The active product surface remains text, image and package. Video/audio/media provider internals stay available for later but hidden from active navigation.
+- Current build warnings are non-fatal Turbopack/NFT trace warnings around local filesystem storage. They should be cleaned in a later hardening sprint, but they did not block production build.

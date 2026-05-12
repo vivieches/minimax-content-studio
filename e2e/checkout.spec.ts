@@ -6,13 +6,13 @@ test.describe("Open Studio smoke", () => {
     await expect(page).toHaveTitle(/Open Studio/);
 
     await page.goto("/scripts");
-    await expect(page.getByRole("heading", { name: "Guion", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Roteiro", exact: true })).toBeVisible();
 
     await page.goto("/thumbnails");
-    await expect(page.getByRole("heading", { name: /Miniaturas/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Gerador de Miniaturas" })).toBeVisible();
 
     await page.goto("/assets");
-    await expect(page.getByRole("heading", { name: "Archivos", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Arquivos", exact: true })).toBeVisible();
 
     await page.goto("/pipeline");
     await expect(page.getByRole("heading", { name: "Pipeline" })).toBeVisible();
