@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { sanitizeAgentCliEnv } from "@/lib/daemon/agentConfig";
+import { normalizeLocale, SUPPORTED_LOCALES } from "@/lib/locales";
 
 const capabilitySchema = z.enum(["text", "image"]);
 const providerIdSchema = z.string().min(1).max(100);
@@ -13,6 +14,10 @@ const providerOverrideSchema = z.object({
   providerId: providerIdSchema.optional(),
   model: z.string().max(200).optional(),
 });
+const localeSchema = z.preprocess(
+  (raw) => normalizeLocale(raw),
+  z.enum(SUPPORTED_LOCALES)
+);
 
 const creatorProfileSchema = z.object({
   tiktok: z.string().max(500).optional(),
@@ -21,7 +26,7 @@ const creatorProfileSchema = z.object({
   businessEmail: z.string().max(500).optional(),
   primaryLinkLabel: z.string().max(120).optional(),
   primaryLinkUrl: z.string().max(1000).optional(),
-  language: z.enum(["auto", "pt-BR", "es", "en"]).optional().default("auto"),
+  language: z.union([z.literal("auto"), localeSchema]).optional().default("auto"),
 });
 const titleCandidateInputSchema = z.object({
   title: z.string().min(1).max(500),
@@ -70,7 +75,7 @@ export const settingsSchema = z.object({
   agentId: z.string().max(100).nullable().optional(),
   agentModels: z.record(providerIdSchema, agentChoiceSchema).optional(),
   agentCliEnv: agentCliEnvSchema.optional(),
-  language: z.enum(["en", "pt", "es"]).optional(),
+  language: localeSchema.optional(),
   // Legacy MiniMax settings are accepted for backward-compatible writes/tests.
   apiKey: z.string().max(500).optional(),
   apiKeyType: z.enum(["pay_as_you_go", "token_plan"]).optional(),
@@ -115,6 +120,7 @@ export const exportSchema = z.object({
 // ── Script Generation ────────────────────────────────────────────────
 export const scriptGenerateSchema = z.object({
   briefing: z.string().min(1).max(2000),
+  locale: localeSchema.optional(),
   saveToAssets: z.boolean().optional().default(true),
 });
 
@@ -124,7 +130,7 @@ export const thumbnailGenerateSchema = z.object({
   title: z.string().min(1).max(500),
   style: z.string().min(1).max(200),
   text: z.string().min(1).max(200),
-  language: z.string().max(50).optional(),
+  language: localeSchema.optional(),
 });
 
 // ── Thumbnail Input (full UI form validation) ────────────────────────
@@ -145,6 +151,7 @@ export const thumbnailInputSchema = z.object({
   hasReferenceStyle: z.boolean().default(false),
   safeTextMode: z.boolean().default(false),
   variations: z.number().int().min(1).max(4).default(1),
+  locale: localeSchema.optional(),
 });
 
 // ── Music Generation ─────────────────────────────────────────────────
@@ -165,6 +172,8 @@ export const imageGenerateSchema = z.object({
   saveToAssets: z.boolean().optional().default(true),
   referenceImage: z.string().max(500000).optional(), // base64 encoded image
   referenceType: z.enum(["face", "style"]).optional(),
+  locale: localeSchema.optional(),
+  visibleText: z.string().max(500).optional(),
 });
 
 // ── Video Generation ─────────────────────────────────────────────────
@@ -183,6 +192,7 @@ export const textProviderGenerateSchema = z.object({
   maxTokens: z.number().int().min(1).max(32000).optional(),
   temperature: z.number().min(0).max(2).optional(),
   provider: providerOverrideSchema.optional(),
+  locale: localeSchema.optional(),
 });
 
 export const imageProviderGenerateSchema = imageGenerateSchema.extend({
@@ -200,6 +210,7 @@ export const titleGenerateSchema = z.object({
   maxSources: z.number().int().min(1).max(20).optional().default(6),
   projectId: z.string().max(200).optional(),
   provider: providerOverrideSchema.optional(),
+  locale: localeSchema.optional(),
   saveToAssets: z.boolean().optional().default(true),
 });
 
@@ -217,6 +228,7 @@ export const captionGenerateSchema = z.object({
   creatorProfile: creatorProfileSchema.optional(),
   projectId: z.string().max(200).optional(),
   provider: providerOverrideSchema.optional(),
+  locale: localeSchema.optional(),
   saveToAssets: z.boolean().optional().default(true),
 });
 
@@ -249,6 +261,7 @@ export const packageGenerateSchema = z.object({
     text: providerOverrideSchema.optional(),
     image: providerOverrideSchema.optional(),
   }).optional(),
+  locale: localeSchema.optional(),
   saveToAssets: z.boolean().optional().default(true),
 });
 

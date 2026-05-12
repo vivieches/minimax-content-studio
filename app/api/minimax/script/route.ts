@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    const { briefing, saveToAssets = true } = validation.data;
+    const { briefing, locale, saveToAssets = true } = validation.data;
     const { systemPrompt } = await import("@/prompts/content-agent-prompt");
     const [brandKit, memories, skills] = await Promise.all([
       getBrandKit(),
@@ -63,6 +63,7 @@ export async function POST(request: Request) {
       prompt: composed.prompt,
       maxTokens: 4096,
       temperature: 0.7,
+      locale,
     });
     const result: Record<string, unknown> = {
       ...parseScriptResponse(textResult.content),

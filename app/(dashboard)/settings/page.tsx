@@ -23,6 +23,7 @@ import {
   Wifi,
   XCircle,
 } from "lucide-react";
+import { LOCALE_FLAGS, LOCALE_LABELS, SUPPORTED_LOCALES, type Locale } from "@/lib/locales";
 import type { ActiveProviderCapability, ProviderCapability, ProviderManifest, ProviderStoredConfig } from "@/lib/providers/types";
 
 type CatalogModel = {
@@ -67,7 +68,7 @@ interface AppSettings {
   demoMode: boolean;
   debugMode: boolean;
   exportDirectory: string;
-  language: "en" | "pt" | "es";
+  language: Locale;
   updatedAt: string;
 }
 
@@ -138,7 +139,7 @@ const emptySettings = (): AppSettings => ({
   demoMode: false,
   debugMode: false,
   exportDirectory: "",
-  language: "pt",
+  language: "pt-BR",
   updatedAt: "",
 });
 
@@ -524,6 +525,15 @@ export default function SettingsPage() {
   function selectExecutionMode(executionMode: AppSettings["executionMode"]) {
     setSettings((current) => ({ ...current, executionMode }));
     void saveSettingsPatch({ executionMode }, "Modo de execução salvo.");
+  }
+
+  function selectLanguage(language: Locale) {
+    setSettings((current) => ({ ...current, language }));
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("open-studio-locale", language);
+      window.localStorage.setItem("mm-locale", language);
+    }
+    void saveSettingsPatch({ language }, "Idioma salvo para novas gerações.");
   }
 
   function selectAgent(agentId: string) {
@@ -1106,7 +1116,47 @@ export default function SettingsPage() {
           <div className="min-w-0">
             {activeSection === "execution" ? renderExecutionSection() : null}
             {activeSection === "language" ? (
-              <PlaceholderSection title="Idioma" body="Preferência atual salva no settings local. A próxima etapa é ligar i18n real para evitar mistura de português, espanhol e inglês nas rotas." />
+              <section className="rounded-[16px] border border-line bg-card p-6">
+                <div className="mb-5">
+                  <h2 className="text-[20px] font-semibold text-ink">Idioma</h2>
+                  <p className="mt-2 max-w-2xl text-[14px] leading-6 text-ink-2">
+                    Este idioma controla a interface e apenas as novas gerações. Pacotes antigos continuam no idioma em que foram criados.
+                  </p>
+                </div>
+                <div className="grid gap-3 md:grid-cols-3">
+                  {SUPPORTED_LOCALES.map((localeOption) => {
+                    const active = settings.language === localeOption;
+                    return (
+                      <button
+                        key={localeOption}
+                        type="button"
+                        onClick={() => selectLanguage(localeOption)}
+                        className={cx(
+                          "flex items-center gap-3 rounded-[12px] border p-4 text-left transition",
+                          active
+                            ? "border-accent/55 bg-accent-soft text-ink"
+                            : "border-line bg-card-hi text-ink-2 hover:border-line-hi hover:bg-hover hover:text-ink",
+                        )}
+                      >
+                        <span className="text-[22px]">{LOCALE_FLAGS[localeOption]}</span>
+                        <span>
+                          <span className="block text-[14px] font-semibold">{LOCALE_LABELS[localeOption]}</span>
+                          <span className="mt-1 block text-[12px] text-ink-3">
+                            {localeOption === "es-ES"
+                              ? "Espanhol da Espanha"
+                              : localeOption === "pt-BR"
+                                ? "Português do Brasil"
+                                : "Inglês"}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="mt-5 rounded-[12px] border border-line bg-card-hi/45 p-4 text-[13px] leading-5 text-ink-2">
+                  Prompts técnicos de imagem continuam em inglês para melhorar o resultado dos providers. Qualquer texto visível na thumbnail deve seguir o idioma selecionado.
+                </div>
+              </section>
             ) : null}
             {activeSection === "appearance" ? (
               <PlaceholderSection title="Aparência" body="Tema escuro segue como padrão de produto. Controles finos de tema ficam registrados aqui, mas não devem mexer no visual principal sem revisão de design." />

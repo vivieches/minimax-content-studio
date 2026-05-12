@@ -1,6 +1,7 @@
 import { providerManifests, createDefaultProviderConfig } from "@/lib/providers/manifests";
 import type { ActiveProviderCapability, ProviderDefaults, ProviderStoredConfig } from "@/lib/providers/types";
 import { sanitizeAgentCliEnv } from "@/lib/daemon/agentConfig";
+import { DEFAULT_LOCALE, normalizeLocale, type Locale } from "@/lib/locales";
 import { readDb, writeDb } from "./db";
 
 export interface AppSettings {
@@ -13,7 +14,7 @@ export interface AppSettings {
   demoMode: boolean;
   debugMode: boolean;
   exportDirectory: string;
-  language: "en" | "pt" | "es";
+  language: Locale;
   updatedAt: string;
 }
 
@@ -180,7 +181,7 @@ function migrateSettings(fileSettings: LegacySettings): AppSettings {
       process.env.MINIMAX_DEBUG_MODE === "true" ||
       fileSettings.debugMode === true,
     exportDirectory: fileSettings.exportDirectory ?? "",
-    language: fileSettings.language ?? "en",
+    language: normalizeLocale(fileSettings.language ?? DEFAULT_LOCALE),
     updatedAt: fileSettings.updatedAt ?? new Date().toISOString(),
   };
 }

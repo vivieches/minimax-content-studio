@@ -29,7 +29,7 @@ describe("SEO caption pattern", () => {
         businessEmail: "vitoria@example.com",
         primaryLinkLabel: "Link de Gemma 4",
         primaryLinkUrl: "https://ai.google.dev/gemma",
-        language: "es",
+        language: "es-ES",
       },
     });
 
@@ -62,7 +62,7 @@ describe("SEO caption pattern", () => {
       creatorProfile: {
         instagram: "/viviexec.es",
         businessEmail: "vitoria@example.com",
-        language: "es",
+        language: "es-ES",
       },
     });
 

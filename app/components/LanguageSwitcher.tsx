@@ -4,12 +4,13 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Globe, Check } from "lucide-react";
 import { useT, type Locale } from "@/lib/i18n";
+import { LOCALE_FLAGS, LOCALE_SHORT_LABELS, SUPPORTED_LOCALES } from "@/lib/locales";
 
-const locales: { value: Locale; label: string; flag: string }[] = [
-  { value: "en",    label: "English",   flag: "🇺🇸" },
-  { value: "pt-BR", label: "Português", flag: "🇧🇷" },
-  { value: "es",    label: "Español",   flag: "🇪🇸" },
-];
+const locales: { value: Locale; label: string; flag: string }[] = SUPPORTED_LOCALES.map((value) => ({
+  value,
+  label: LOCALE_SHORT_LABELS[value],
+  flag: LOCALE_FLAGS[value],
+}));
 
 export function LanguageSwitcher() {
   const { locale, setLocale } = useT();

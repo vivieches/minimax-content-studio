@@ -142,7 +142,7 @@ describe("captionGenerateSchema", () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.pattern).toBeUndefined();
-      expect(result.data.creatorProfile?.language).toBe("es");
+      expect(result.data.creatorProfile?.language).toBe("es-ES");
     }
   });
 });

@@ -31,6 +31,12 @@ import { parseTitlePackResponse, renderTitleRepairPrompt, type TitleCandidate } 
 import { createProfessionalPackageExport } from "@/daemon/export/package";
 import { DATA_DIR } from "@/lib/storage/db";
 import { getSettings } from "@/lib/storage/settings";
+import {
+  buildImageGenerationLocaleInstruction,
+  normalizeLocale,
+  prependLocaleInstruction,
+  type Locale,
+} from "@/lib/locales";
 import { getAdapterForProvider } from "./registry";
 import { isDemoModeEnabled, resolveProviderConfig, type ProviderOverride } from "./runtime";
 import type {
@@ -46,6 +52,7 @@ export type TitlePackResult = {
   top3: TitleCandidate[];
   providerId: string;
   model: string;
+  locale?: Locale;
   research?: ResearchFindings | null;
   diagnostics?: Diagnostic[];
 };
@@ -53,6 +60,7 @@ export type TitlePackResult = {
 export type CaptionPackResult = CaptionPack & {
   providerId: string;
   model: string;
+  locale?: Locale;
   diagnostics?: Diagnostic[];
 };
 
@@ -175,22 +183,43 @@ async function generateTextByProvider(
   return adapter.generateText(request, config);
 }
 
+function applyTextLocale(request: TextGenerationRequest, locale: ReturnType<typeof normalizeLocale>): TextGenerationRequest {
+  return {
+    ...request,
+    locale,
+    systemPrompt: prependLocaleInstruction(request.systemPrompt, locale),
+  };
+}
+
+function applyImageLocale(request: ImageGenerationRequest, locale: ReturnType<typeof normalizeLocale>): ImageGenerationRequest {
+  return {
+    ...request,
+    locale,
+    prompt: [
+      buildImageGenerationLocaleInstruction(locale, request.visibleText),
+      request.prompt,
+    ].join("\n\n"),
+  };
+}
+
 export async function generateTextWithProvider(
   request: TextGenerationRequest,
   override?: ProviderOverride
 ): Promise<TextGenerationResult> {
+  const settings = await getSettings();
+  const localizedRequest = applyTextLocale(request, normalizeLocale(request.locale ?? settings.language));
+
   if (await isDemoModeEnabled()) {
     return {
-      content: `[DEMO MODE]\n\n${request.prompt}`,
+      content: `[DEMO MODE]\n\n${localizedRequest.prompt}`,
       providerId: override?.providerId || "demo",
       model: override?.model || "demo-text",
     };
   }
 
-  const settings = await getSettings();
   if (!override && settings.executionMode === "cli" && settings.agentId) {
     const agentChoice = settings.agentModels[settings.agentId] ?? {};
-    const prompt = [request.systemPrompt, request.prompt].filter(Boolean).join("\n\n");
+    const prompt = [localizedRequest.systemPrompt, localizedRequest.prompt].filter(Boolean).join("\n\n");
     const runRef = await createAgentRun({
       agentId: settings.agentId,
       model: agentChoice.model,
@@ -252,7 +281,7 @@ export async function generateTextWithProvider(
         reason: agentErrorText,
       });
       try {
-        const fallback = await generateTextByProvider(request);
+        const fallback = await generateTextByProvider(localizedRequest);
         const fallbackUsed = fallbackDiagnostic({
           kind: "fallback_used",
           from: `agent:${settings.agentId}`,
@@ -295,19 +324,22 @@ export async function generateTextWithProvider(
     }
   }
 
-  return generateTextByProvider(request, override);
+  return generateTextByProvider(localizedRequest, override);
 }
 
 export async function generateImageWithProvider(
   request: ImageGenerationRequest,
   override?: ProviderOverride
 ): Promise<ImageGenerationResult> {
+  const settings = await getSettings();
+  const localizedRequest = applyImageLocale(request, normalizeLocale(request.locale ?? settings.language));
+
   if (await isDemoModeEnabled()) {
-    const text = encodeURIComponent(request.prompt.slice(0, 40) || "Open Studio");
+    const text = encodeURIComponent(localizedRequest.prompt.slice(0, 40) || "Open Studio");
     return {
       urls: [`https://placehold.co/1280x720/151922/ff5aa7?text=${text}`],
       base64s: [],
-      finalPrompt: request.prompt,
+      finalPrompt: localizedRequest.prompt,
       providerId: override?.providerId || "demo",
       model: override?.model || "demo-image",
     };
@@ -316,7 +348,7 @@ export async function generateImageWithProvider(
   const config = await resolveProviderConfig("image", override);
   const adapter = getAdapterForProvider(config.providerId);
   if (!adapter.generateImage) throw new Error(`${config.manifest.name} does not support image generation.`);
-  return adapter.generateImage(request, config);
+  return adapter.generateImage(localizedRequest, config);
 }
 
 export function imageResultCacheSources(result: ImageGenerationResult): string[] {
@@ -339,11 +371,14 @@ export async function generateTitlePack(
     maxSources?: number;
     projectId?: string;
     count?: number;
+    locale?: Locale;
     saveToAssets?: boolean;
   },
   override?: ProviderOverride
 ): Promise<TitlePackResult> {
   const count = params.count ?? 10;
+  const settings = await getSettings();
+  const locale = normalizeLocale(params.locale ?? settings.language);
   const diagnostics: Diagnostic[] = [];
   let research: ResearchFindings | null = null;
 
@@ -378,6 +413,7 @@ export async function generateTitlePack(
       prompt,
       maxTokens: 2600,
       temperature: 0.85,
+      locale,
     },
     override
   );
@@ -391,6 +427,7 @@ export async function generateTitlePack(
           prompt: renderTitleRepairPrompt(result.content, count),
           maxTokens: 2600,
           temperature: 0.2,
+          locale,
         },
         override
       );
@@ -411,6 +448,7 @@ export async function generateTitlePack(
       research,
       providerId: result.providerId,
       model: result.model,
+      locale,
       diagnostics,
     };
     await createAsset({
@@ -427,6 +465,7 @@ export async function generateTitlePack(
         research,
         providerId: result.providerId,
         model: result.model,
+        locale,
       },
       sourceModule: "title-generator",
       tags: ["titles", "ctr", "seo"],
@@ -438,6 +477,7 @@ export async function generateTitlePack(
     ...parsed,
     providerId: result.providerId,
     model: result.model,
+    locale,
     research,
     diagnostics,
   };
@@ -499,11 +539,18 @@ export async function generateCaptionPack(
     pattern?: string;
     creatorProfile?: CreatorProfile;
     projectId?: string;
+    locale?: Locale;
     saveToAssets?: boolean;
   },
   override?: ProviderOverride
 ): Promise<CaptionPackResult> {
-  const creatorProfile = normalizeCreatorProfile(params.creatorProfile);
+  const settings = await getSettings();
+  const locale = normalizeLocale(params.locale ?? settings.language);
+  const normalizedProfile = normalizeCreatorProfile(params.creatorProfile);
+  const creatorProfile = {
+    ...normalizedProfile,
+    language: normalizedProfile.language === "auto" ? locale : normalizedProfile.language,
+  };
   const result = await generateTextWithProvider(
     {
       systemPrompt: captionSystemPrompt,
@@ -516,6 +563,7 @@ export async function generateCaptionPack(
       }),
       maxTokens: 3200,
       temperature: 0.55,
+      locale,
     },
     override
   );
@@ -529,6 +577,7 @@ export async function generateCaptionPack(
     ...parsed,
     providerId: result.providerId,
     model: result.model,
+    locale,
     diagnostics: result.diagnostics,
   };
 
@@ -545,6 +594,7 @@ export async function generateCaptionPack(
         creatorProfile,
         providerId: result.providerId,
         model: result.model,
+        locale,
       },
       sourceModule: "caption-generator",
       tags: ["captions", "seo", "description"],
@@ -575,9 +625,12 @@ export async function generateContentPackage(params: {
   maxSources?: number;
   projectId?: string;
   providers?: Partial<Record<ActiveProviderCapability, ProviderOverride>>;
+  locale?: Locale;
   saveToAssets?: boolean;
 }): Promise<Record<string, unknown>> {
   const { briefing, steps = ["text", "image"], providers = {}, saveToAssets = true } = params;
+  const settings = await getSettings();
+  const contentLocale = normalizeLocale(params.locale ?? settings.language);
   const projectId = params.projectId || `pkg_${Date.now().toString(36)}`;
   const projectContext = saveToAssets ? createDaemonContext({ storageDir: DATA_DIR }) : null;
   if (projectContext && !(await getProject(projectContext, projectId))) {
@@ -593,6 +646,7 @@ export async function generateContentPackage(params: {
       prompt: briefing,
       maxTokens: 4096,
       temperature: 0.7,
+      locale: contentLocale,
     },
     providers.text
   );
@@ -615,6 +669,7 @@ export async function generateContentPackage(params: {
         maxSources: params.maxSources,
         projectId,
         count: 10,
+        locale: contentLocale,
         saveToAssets,
       },
       providers.text
@@ -670,7 +725,13 @@ export async function generateContentPackage(params: {
       })
     );
     const imageResult = await generateImageWithProvider(
-      { prompt: thumbnailPrompt, aspectRatio: "16:9", n: 1 },
+      {
+        prompt: thumbnailPrompt,
+        aspectRatio: "16:9",
+        n: 1,
+        locale: contentLocale,
+        visibleText: String(packageData.thumbnailText || selectedTitle),
+      },
       providers.image
     );
     const cachedUrls = await cacheGeneratedImageUrls(imageResultCacheSources(imageResult));
@@ -713,6 +774,7 @@ export async function generateContentPackage(params: {
     topTitleCandidates: titlePack?.top3 ?? [],
     thumbnailPrompt: String(packageData.thumbnailPrompt || ""),
     thumbnailText: String(packageData.thumbnailText || ""),
+    contentLocale,
     outputs,
     diagnostics,
   };

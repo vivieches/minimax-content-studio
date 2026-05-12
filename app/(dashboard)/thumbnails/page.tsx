@@ -23,6 +23,8 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { useT } from "@/lib/i18n";
+import { buildImageGenerationLocaleInstruction, type Locale } from "@/lib/locales";
 
 type ThumbnailConfig = {
   topic: string;
@@ -120,15 +122,16 @@ const INITIAL_CONFIG: ThumbnailConfig = {
   resolution: "1920x1080",
 };
 
-function buildThumbnailPrompt(config: ThumbnailConfig) {
+function buildThumbnailPrompt(config: ThumbnailConfig, locale: Locale) {
   const colorPreset = COLOR_OPTIONS.find((option) => option.id === config.colorPreference);
   const textInstruction = config.safeTextMode
     ? "Generate the base thumbnail without any text, letters, words, typography, logos, or watermarks. The impact text will be applied later as a front-end overlay."
     : config.includeText
-      ? `Use large, bold, readable thumbnail text with the exact words: "${config.impactText}". Keep it clean, high contrast, and readable on mobile.`
+      ? `Use large, bold, readable thumbnail text based on this meaning: "${config.impactText}". If needed, adapt it into the selected language. Keep it clean, high contrast, and readable on mobile.`
       : "Do not add text to the image.";
 
   return [
+    buildImageGenerationLocaleInstruction(locale, config.impactText),
     "Professional YouTube thumbnail, 16:9, high CTR composition, modern creator aesthetic.",
     `Video topic: ${config.topic}.`,
     `Video title: ${config.title}.`,
@@ -254,6 +257,7 @@ function AssistantPanel({
 }
 
 export default function ThumbnailGeneratorPage() {
+  const { locale } = useT();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [config, setConfig] = useState<ThumbnailConfig>(INITIAL_CONFIG);
   const [activePreset, setActivePreset] = useState("high-ctr");
@@ -268,7 +272,7 @@ export default function ThumbnailGeneratorPage() {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const selectedUrl = result?.urls?.[selectedIndex] ?? "";
-  const prompt = useMemo(() => buildThumbnailPrompt(config), [config]);
+  const prompt = useMemo(() => buildThumbnailPrompt(config, locale), [config, locale]);
   const impactWordCount = config.impactText.trim().split(/\s+/).filter(Boolean).length;
   const selectedColor = COLOR_OPTIONS.find((option) => option.id === config.colorPreference) ?? COLOR_OPTIONS[0];
   const canGenerate = Boolean(config.topic.trim() && config.title.trim() && config.impactText.trim());
@@ -356,6 +360,8 @@ export default function ThumbnailGeneratorPage() {
           saveToAssets: true,
           referenceImage: config.referenceImage || undefined,
           referenceType: config.referenceImage ? config.referenceType : undefined,
+          locale,
+          visibleText: config.impactText,
         }),
       });
       const data = await response.json();

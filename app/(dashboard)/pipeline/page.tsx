@@ -17,6 +17,8 @@ import {
   Trophy,
   WandSparkles,
 } from "lucide-react";
+import { useT } from "@/lib/i18n";
+import type { Locale } from "@/lib/locales";
 
 type TitleCandidate = {
   title: string;
@@ -115,7 +117,7 @@ type CreatorProfile = {
   businessEmail: string;
   primaryLinkLabel: string;
   primaryLinkUrl: string;
-  language: "auto" | "pt-BR" | "es" | "en";
+  language: "auto" | Locale;
 };
 
 function Panel({ children, className = "" }: { children: ReactNode; className?: string }) {
@@ -164,6 +166,7 @@ function normalizeTitleCandidates(value: unknown): TitleCandidate[] {
 }
 
 export default function PipelinePage() {
+  const { locale } = useT();
   const [briefing, setBriefing] = useState(
     "Quero um vídeo de YouTube sobre como usar IA local para criar conteúdo sem depender de uma única API."
   );
@@ -221,6 +224,7 @@ export default function PipelinePage() {
           briefing,
           steps: generateThumbnail ? ["text", "image"] : ["text"],
           research: useResearch,
+          locale,
           saveToAssets: true,
         }),
       });
@@ -254,6 +258,7 @@ export default function PipelinePage() {
               research: useResearch,
               count: 10,
               projectId: data.projectId,
+              locale,
               saveToAssets: true,
             }),
           });
@@ -282,8 +287,9 @@ export default function PipelinePage() {
                 topic: briefing,
                 title: generatedPackage.selectedTitle || generatedPackage.title,
                 pattern: captionPattern,
-                creatorProfile,
+                creatorProfile: { ...creatorProfile, language: creatorProfile.language === "auto" ? locale : creatorProfile.language },
                 projectId: data.projectId,
+                locale,
                 saveToAssets: true,
               }),
             });

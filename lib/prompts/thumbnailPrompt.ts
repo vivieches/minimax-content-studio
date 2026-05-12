@@ -1,4 +1,10 @@
 import { sanitizePromptInput } from "./sanitize";
+import {
+  buildImageGenerationLocaleInstruction,
+  localeToGenerationLanguage,
+  normalizeLocale,
+  type Locale,
+} from "@/lib/locales";
 
 export interface ThumbnailInput {
   topic: string;
@@ -16,6 +22,7 @@ export interface ThumbnailInput {
   hasReferenceFace: boolean;
   hasReferenceStyle: boolean;
   safeTextMode: boolean;
+  locale?: Locale;
 }
 
 export const THUMBNAIL_STYLES = [
@@ -115,7 +122,9 @@ export function buildYoutubeThumbnailPrompt(input: ThumbnailInput): string {
     colorPreference,
     hasReferenceFace,
     safeTextMode,
+    locale,
   } = input;
+  const normalizedLocale = normalizeLocale(locale);
 
   const safeTopic = sanitizePromptInput(topic);
   const safeTitle = sanitizePromptInput(title);
@@ -154,6 +163,8 @@ export function buildYoutubeThumbnailPrompt(input: ThumbnailInput): string {
   // Build the main prompt
   const parts: string[] = [];
 
+  parts.push(buildImageGenerationLocaleInstruction(normalizedLocale, safeHook));
+
   // Opening: Set the context
   parts.push(`YouTube thumbnail design, 16:9 aspect ratio, optimized for high click-through rate.`);
 
@@ -183,7 +194,7 @@ export function buildYoutubeThumbnailPrompt(input: ThumbnailInput): string {
 
   // Text instructions
   if (includeText && !safeTextMode) {
-    parts.push(`Include large, bold, highly readable text prominently in the composition: "${safeHook}". The text must be clear, correctly spelled, and take up significant visual weight. Use strong contrast between text and background.`);
+    parts.push(`Include large, bold, highly readable text prominently in the composition. Use the meaning of this text, adapted into ${localeToGenerationLanguage(normalizedLocale)} if needed: "${safeHook}". The text must be clear, correctly spelled, and take up significant visual weight. Use strong contrast between text and background.`);
   } else if (safeTextMode) {
     parts.push(`DO NOT include any text, letters, words, or typography in the image. Generate a clean base composition without any text elements. The text will be added later.`);
   }
@@ -242,18 +253,22 @@ export function buildThumbnailPromptGenerationPrompt(params: {
   text: string;
   language?: string;
 }): string {
-  const langText = params.language && params.language.toLowerCase().includes("english")
-    ? `Text in English: "${sanitizePromptInput(params.text)}"`
-    : `Text: "${sanitizePromptInput(params.text)}"`;
+  const locale = normalizeLocale(params.language);
+  const language = localeToGenerationLanguage(locale);
+  const safeText = sanitizePromptInput(params.text);
 
   return `You are an expert YouTube thumbnail prompt engineer. Create a detailed, professional visual prompt for an AI image generator.
 
 Video Topic: ${sanitizePromptInput(params.theme)}
 Video Title: ${sanitizePromptInput(params.title)}
 Style Direction: ${sanitizePromptInput(params.style)}
-${langText}
+Visible text meaning: "${safeText}"
+Visible text language: ${language}
 
 Requirements:
+- Write the technical image prompt in English.
+- Any visible text inside the image must be in ${language}.
+- If the visible text source is not already in ${language}, adapt its meaning into ${language}.
 - Optimized for YouTube 16:9 thumbnail format
 - High click-through rate design principles
 - Clear focal point and strong visual hierarchy
@@ -361,7 +376,7 @@ export function buildThumbnailImagePrompt(visualPrompt: string, text: string): s
   return `YouTube thumbnail, 16:9, high CTR, modern style.
 Main visual: clean, professional, eye-catching composition.
 Dark background with vibrant accent colors.
-Large readable text: "${sanitizePromptInput(text)}".
+${buildImageGenerationLocaleInstruction(normalizeLocale(undefined), sanitizePromptInput(text))}
 Do NOT generate random words.
 Do NOT generate fake logos.
 Do NOT generate brand names.

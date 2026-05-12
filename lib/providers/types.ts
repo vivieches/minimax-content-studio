@@ -1,4 +1,5 @@
 import type { Diagnostic } from "@/lib/daemon/diagnostics";
+import type { Locale } from "@/lib/locales";
 
 export type ActiveProviderCapability = "text" | "image";
 export type LegacyProviderCapability = "audio" | "video";
@@ -58,6 +59,7 @@ export interface TextGenerationRequest {
   model?: string;
   maxTokens?: number;
   temperature?: number;
+  locale?: Locale;
 }
 
 export interface TextGenerationResult {
@@ -75,6 +77,8 @@ export interface ImageGenerationRequest {
   n?: number;
   referenceImage?: string;
   referenceType?: "face" | "style";
+  locale?: Locale;
+  visibleText?: string;
 }
 
 export interface ImageGenerationResult {

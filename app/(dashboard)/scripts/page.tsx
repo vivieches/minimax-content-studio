@@ -17,6 +17,7 @@ import {
   Sparkles,
   XCircle,
 } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 type ScriptSection = {
   title: string;
@@ -198,6 +199,7 @@ function IconButton({
 }
 
 export default function ScriptGeneratorPage() {
+  const { locale } = useT();
   const [objective, setObjective] = useState("Informar");
   const [topic, setTopic] = useState("Produtividade pessoal");
   const [audience, setAudience] = useState("Estudantes universitários");
@@ -312,7 +314,7 @@ export default function ScriptGeneratorPage() {
       const response = await fetch("/api/minimax/script", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ briefing, saveToAssets: true }),
+        body: JSON.stringify({ briefing, locale, saveToAssets: true }),
       });
 
       const data = await response.json();

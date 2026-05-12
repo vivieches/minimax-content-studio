@@ -10,6 +10,8 @@ import {
   Sparkles,
   Trophy,
 } from "lucide-react";
+import { useT } from "@/lib/i18n";
+import type { Locale } from "@/lib/locales";
 
 type TitleCandidate = {
   title: string;
@@ -44,7 +46,7 @@ type CreatorProfile = {
   businessEmail: string;
   primaryLinkLabel: string;
   primaryLinkUrl: string;
-  language: "auto" | "pt-BR" | "es" | "en";
+  language: "auto" | Locale;
 };
 
 type TitleAsset = {
@@ -113,6 +115,7 @@ function parseStoredTitlePack(asset: TitleAsset): TitleResponse | null {
 }
 
 export default function ContentToolsPage() {
+  const { locale } = useT();
   const [topic, setTopic] = useState("Como usar IA local para criar conteúdo sem depender de uma única API");
   const [briefing, setBriefing] = useState("");
   const [thumbnailConcept, setThumbnailConcept] = useState("");
@@ -182,6 +185,7 @@ export default function ContentToolsPage() {
           outlierNotes,
           research: useResearch,
           count: 10,
+          locale,
           saveToAssets: true,
         }),
       });
@@ -213,7 +217,8 @@ export default function ContentToolsPage() {
           topic,
           title: titleResult?.top3?.[0]?.title || topic,
           pattern: captionPattern,
-          creatorProfile,
+          creatorProfile: { ...creatorProfile, language: creatorProfile.language === "auto" ? locale : creatorProfile.language },
+          locale,
           saveToAssets: true,
         }),
       });

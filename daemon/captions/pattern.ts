@@ -1,3 +1,5 @@
+import { localeToGenerationLanguage, normalizeLocale, type Locale } from "@/lib/locales";
+
 export type CreatorProfile = {
   tiktok?: string;
   instagram?: string;
@@ -5,7 +7,7 @@ export type CreatorProfile = {
   businessEmail?: string;
   primaryLinkLabel?: string;
   primaryLinkUrl?: string;
-  language?: "auto" | "pt-BR" | "es" | "en";
+  language?: "auto" | Locale;
 };
 
 export type CaptionPack = {
@@ -150,9 +152,8 @@ export function buildHashtags(keywords: string[], limit = 12) {
 export function normalizeCreatorProfile(profile: unknown): CreatorProfile {
   if (!profile || typeof profile !== "object") return { language: "auto" };
   const record = profile as Record<string, unknown>;
-  const language = ["pt-BR", "es", "en", "auto"].includes(clean(record.language))
-    ? clean(record.language) as CreatorProfile["language"]
-    : "auto";
+  const rawLanguage = clean(record.language);
+  const language = rawLanguage === "auto" ? "auto" : normalizeLocale(rawLanguage);
   return {
     tiktok: clean(record.tiktok),
     instagram: clean(record.instagram),
@@ -189,7 +190,7 @@ export function buildSeoCaptionPrompt(input: {
   });
   const hashtags = buildHashtags(keywords, 14);
   const profileBlock = [
-    profile.language ? `LANGUAGE: ${profile.language}` : "",
+    profile.language && profile.language !== "auto" ? `LANGUAGE: ${localeToGenerationLanguage(profile.language)}` : "",
     profile.primaryLinkLabel || profile.primaryLinkUrl
       ? `PRIMARY_LINK: ${profile.primaryLinkLabel || "Main link"} -> ${profile.primaryLinkUrl || "missing"}`
       : "",
@@ -226,21 +227,21 @@ export function buildLocalSeoCaption(input: {
   const hashtags = buildHashtags(keywords, 14);
   const leadTags = hashtags.slice(0, 3).join(" ");
   const seoSentence = keywords.slice(0, 10).join(", ");
-  const language = profile.language === "pt-BR" ? "pt-BR" : profile.language === "en" ? "en" : "es";
+  const language = profile.language === "auto" || !profile.language ? "es-ES" : normalizeLocale(profile.language);
 
   const intro = language === "pt-BR"
     ? `Neste vídeo eu explico ${title}, conectando os pontos principais do roteiro com exemplos práticos e contexto para quem quer entender o que realmente importa.`
-    : language === "en"
+    : language === "en-US"
       ? `In this video I explain ${title}, connecting the key ideas from the script with practical context and why it matters.`
       : `En este vídeo te explico ${title}, conectando los puntos principales del guion con ejemplos prácticos y contexto para entender por qué importa.`;
   const searchLine = language === "pt-BR"
     ? `Se você estava buscando ${seoSentence}, este vídeo ajuda a entender o tema com clareza e aplicação prática.`
-    : language === "en"
+    : language === "en-US"
       ? `If you were searching for ${seoSentence}, this video will help you understand the topic clearly and practically.`
       : `Si estabas buscando ${seoSentence}, este vídeo te ayudará a entender el tema con claridad y aplicación práctica.`;
   const cta = language === "pt-BR"
     ? "Se gostou, deixe seu LIKE e se INSCREVA para acompanhar novidades sobre inteligência artificial, tecnologia, automação, produtividade e tendências digitais."
-    : language === "en"
+    : language === "en-US"
       ? "If this helped, leave a LIKE and SUBSCRIBE for more updates on artificial intelligence, technology, automation, productivity and digital trends."
       : "Si te ha gustado, no olvides dejar tu LIKE y SUSCRIBIRTE para estar al día con las últimas novedades de inteligencia artificial, tecnología, apps, herramientas de IA, automatización, productividad y tendencias digitales.";
   const linkBlock = profile.primaryLinkUrl

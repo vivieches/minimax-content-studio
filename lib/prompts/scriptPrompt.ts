@@ -1,4 +1,5 @@
 import { sanitizePromptInput } from "./sanitize";
+import { localeToGenerationLanguage, normalizeLocale } from "@/lib/locales";
 
 export const scriptSystemPrompt = `You are a professional YouTube scriptwriter.
 
@@ -38,11 +39,12 @@ export function buildScriptPrompt(params: {
   cta?: string;
   references?: string;
 }): string {
+  const language = localeToGenerationLanguage(normalizeLocale(params.language));
   return `Create a complete YouTube video script based on this brief:
 
 IDEA: ${sanitizePromptInput(params.idea)}
 TARGET AUDIENCE: ${sanitizePromptInput(params.audience ?? "General")}
-LANGUAGE: ${sanitizePromptInput(params.language ?? "Spanish")}
+LANGUAGE: ${sanitizePromptInput(language)}
 TONE: ${sanitizePromptInput(params.tone ?? "Educational and engaging")}
 ESTIMATED DURATION: ${sanitizePromptInput(params.duration ?? "8-10 minutes")}
 VIDEO TYPE: ${sanitizePromptInput(params.videoType ?? "Tutorial / Educational")}

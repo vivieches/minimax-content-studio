@@ -1,8 +1,15 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from "react";
+import {
+  DEFAULT_LOCALE,
+  LEGACY_LOCALE_STORAGE_KEY,
+  LOCALE_STORAGE_KEY,
+  normalizeLocale,
+  type Locale,
+} from "@/lib/locales";
 
-export type Locale = "en" | "pt-BR" | "es";
+export type { Locale } from "@/lib/locales";
 
 const en: Record<string, string> = {
   // Nav
@@ -1153,23 +1160,27 @@ const es: Record<string, string> = {
   "createBar.placeholder": "¿Qué quieres crear hoy?",
 };
 
-const translations: Record<Locale, Record<string, string>> = { en, "pt-BR": ptBR, es };
+const translations: Record<Locale, Record<string, string>> = {
+  "en-US": en,
+  "pt-BR": ptBR,
+  "es-ES": es,
+};
 
 const I18nContext = createContext<{
   locale: Locale;
   setLocale: (l: Locale) => void;
   t: (key: string) => string;
 }>({
-  locale: "pt-BR",
+  locale: DEFAULT_LOCALE,
   setLocale: () => {},
   t: (key) => ptBR[key] ?? en[key] ?? key,
 });
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(() => {
-    if (typeof window === "undefined") return "pt-BR";
-    const saved = localStorage.getItem("mm-locale") as Locale;
-    return saved && Object.keys(translations).includes(saved) ? saved : "pt-BR";
+    if (typeof window === "undefined") return DEFAULT_LOCALE;
+    const saved = localStorage.getItem(LOCALE_STORAGE_KEY) ?? localStorage.getItem(LEGACY_LOCALE_STORAGE_KEY);
+    return normalizeLocale(saved);
   });
   const [ready, setReady] = useState(false);
 
@@ -1178,13 +1189,24 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     return () => cancelAnimationFrame(frame);
   }, []);
 
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
   const setLocale = useCallback((l: Locale) => {
-    setLocaleState(l);
-    localStorage.setItem("mm-locale", l);
+    const nextLocale = normalizeLocale(l);
+    setLocaleState(nextLocale);
+    localStorage.setItem(LOCALE_STORAGE_KEY, nextLocale);
+    localStorage.setItem(LEGACY_LOCALE_STORAGE_KEY, nextLocale);
+    void fetch("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ language: nextLocale }),
+    }).catch(() => undefined);
   }, []);
 
   const t = useCallback((key: string): string => {
-    return translations[locale][key] ?? translations["pt-BR"][key] ?? translations.en[key] ?? key;
+    return translations[locale][key] ?? translations["pt-BR"][key] ?? translations["en-US"][key] ?? key;
   }, [locale]);
 
   const value = useMemo(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
